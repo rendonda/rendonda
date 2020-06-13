@@ -3,6 +3,11 @@ title: "Cleaning weather station and SWD trap data"
 author: "Dalila Rendon"
 date: "6/13/2020"
 output: html_document
+knit: (function(input_file, encoding) {
+  out_dir <- 'docs';
+  rmarkdown::render(input_file,
+ encoding=encoding,
+ output_file=file.path(dirname(input_file), out_dir, 'swd_weather_cleanup.html'))})
 ---
 
 I often have to analyze data from multiple sources, such as websites, or collected from other stakeholders. In this case study, I collect weather data obtained from weather stations, and trap data for the Spotted-wing drosophila (SWD) collected by extension agents in a cherry-growing region. 
