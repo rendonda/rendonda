@@ -1,8 +1,8 @@
-name: "my-website"
+name: "rendonda-website"
 navbar:
-  title: "My Website"
+  title: "Dalila Rendon R data scripts"
   left:
     - text: "Home"
       href: index.html
-    - text: "About"
-      href: about.html
+    - text: "Cleaning weather station and SWD trap data"
+      href: swd_weather_cleanup.html

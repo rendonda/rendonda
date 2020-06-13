@@ -1,0 +1,388 @@
+---
+title: "Cleaning weather station and SWD trap data"
+author: "Dalila Rendon"
+date: "6/13/2020"
+output: html_document
+---
+
+I often have to analyze data from multiple sources, such as websites, or collected from other stakeholders. In this case study, I collect weather data obtained from weather stations, and trap data for the Spotted-wing drosophila (SWD) collected by extension agents in a cherry-growing region. 
+
+Extension data is meant to be user-friendly and easy to understand for multiple audiences such as growers or field scouts. But that also means that it is a mess for data analysis and it needs a lot of cleaning up. 
+
+Here we are trying to understand what is the relationship between several weather parameters, and the abundance of spotted-wing drosophila (SWD) from multiple trap locations. The final dataset to analyze should look like this:
+```{r, echo= FALSE}
+knitr::include_graphics("Images/Pic_1.png")
+#Picture 1
+```
+
+Columns A to M are constant variables, and provide information about each site. Columns N to end are SWD trap data, and summarized weather parameters such as maximum and minimum temperatures, degree days, precipitation, etc. I had done this dataset by hand for years 2017 and 2018 when I didn't know any better, and for 2019 I wrote the following script to tidy, organize, and bind the data. I show this here with a lot of intermediate steps for clarity, but it can also be done in a single chunk connected by pipes without the need of creating intermediate dataframes.
+
+# Part 1: SWD trap counts
+
+First, this is what the SWD raw trap count data looks like, courtesy of Oregon State University extension service in Wasco county.
+```{r, echo= FALSE}
+knitr::include_graphics("Images/Pic_2.png")
+```
+
+This dataset is meant to be easy to understand for stakeholders who consult it every week, but it is a data analysis nightmare. It has two headers, in row 1 it shows each date of sampling plus the totals, and the second header shows information about the sites. It also has two extra rows at the bottom showing total and average. The other issue is that it separates SWD by sexes, but in the end I only want total number. 
+
+I am going to clean this dataset so that at the end we are left with a dataframe that shows the total number of SWD collected in spring, in summer, and in the month of June.  
+
+First, import the raw dataset shown above. I use stringsAsFactors=FALSE to prevent R from converting all values into factors. Especially when there are headers or multiple headers, converting all values into factors does not make sense, as it will assign a level to "male SWD". Rather, we want R to treat everything as a string and convert values manually.
+```{r, echo = TRUE, warning=FALSE, message=FALSE}
+library(tidyverse)
+raw_swd <- read.csv("C:\\Users\\rendonda\\Documents\\Oregon State\\Datasheets\\SWD wild sites\\Wasco County 2019.csv", header=FALSE, stringsAsFactors=FALSE)
+```
+
+```{r, echo = FALSE, warning=FALSE, message=FALSE}
+knitr::kable(
+  raw_swd[1:10, ], caption = "raw_swd, rows 1-10"
+)
+```
+
+We need to get the number of rows and columns in .csv that contain actual data. In this case, 
+```{r, echo = TRUE, warning=FALSE, message=FALSE}
+# we delete 4 rows we will not use, because there are 2 headers and 2 rows with totals and averages at the bottom that we don't need. 
+num_rows <- nrow(raw_swd)-4
+# Then specify row number (3rd) at which actual data starts in CSV
+start_row <- 3
+# Get number of columns in CSV
+num_columns <- ncol(raw_swd)
+# Column number at which actual data (i.e., the dates) starts in CSV
+start_column <- 7
+```
+
+
+Then I create an empty dataframe, where I manually add the column names from variables that I am interested in 
+```{r, echo = TRUE, warning=FALSE, message=FALSE}
+mydataframe1 <- data.frame(location1 = character(),
+                           crop_host = character(),
+                           location2 = character(),
+                           trap_ID = integer(),
+                           sex = character(),
+                           date = as.Date(character()),
+                           count = integer()
+                           )
+```
+
+I then run a for-loop to extract information from each row and column in raw_swd. In for-loops, we define a variable that contains the counter in each loop iteration. Here, we name this variable 'row_index'.
+```{r, echo = TRUE, warning=FALSE, message=FALSE}
+# In the outer loop, we sequentially go through all the data rows.
+for (row_index in seq(start_row, num_rows+1)) {
+  
+  # In the inner loop, we go through the dates with pairs of (male, female) columns. We start at 'start_column' defined above and go through to the last column, incrementing our counter 'col_index' by 2. That means that 'col_index' is the index of the column with the male SWD counts.
+  # When we access the counts for the female SWD further down, we use 'col_index+1' to get the value at the next column.
+  for (col_index in seq(start_column, num_columns, by=2)) {
+  
+  # We then create a data row with the count of male SWD for the current trap and the current date. The current trap locations/crop host/TrapID# are in columns 1,2,3,4 in the current row. The current date is in first row of the current column.
+    myrow_male <- data.frame(location1 = as.character(raw_swd[row_index,1]),
+                             crop_host = as.character(raw_swd[row_index,2]),
+                             location2 = as.character(raw_swd[row_index,3]),
+                             trap_ID = as.integer(raw_swd[row_index,4]),
+                             sex = as.character("male"),
+                             date = as.Date(raw_swd[1,col_index], format="%m/%d/%Y"),
+                             count = as.integer(raw_swd[row_index,col_index])
+    )
+    # We add the male SWD data row to our empty dataframe
+    mydataframe1 <- rbind(mydataframe1, myrow_male)
+    
+    # Then, we create a data row with the count of female SWD for the current trap and the current date. The current trap locations/crop host/TrapID# are in columns 1,2,3,4 in the current row. The current date is in first row of the current column. As mentioned at the inner loop above, we specify 'col_index+1' to access the female SWD counts, because we go through dates with pairs of (male, female) counts, and col_index points to the male column.
+    myrow_female <- data.frame(location1 = as.character(raw_swd[row_index,1]),
+                               crop_host = as.character(raw_swd[row_index,2]),
+                               location2 = as.character(raw_swd[row_index,3]),
+                               trap_ID = as.integer(raw_swd[row_index,4]),
+                               sex = as.character("female"),
+                               date = as.Date(raw_swd[1,col_index+1], format="%m/%d/%Y"),
+                               count = as.integer(raw_swd[row_index,col_index+1])
+    )
+    # We add the female SWD data row to our dataframe. 
+    mydataframe1 <- rbind(mydataframe1, myrow_female)
+  }
+}
+
+# For each iteration for the whole loop above, it adds a new male and female row
+```
+
+This is what the filled dataframe now looks like (showing first 10 rows):
+```{r, echo = FALSE, warning=FALSE, message=FALSE}
+#head(raw_swd)
+knitr::kable(
+  mydataframe1[1:10, ],   caption = "mydataframe1"
+)
+#knitr::include_graphics("C:\\Users\\rendonda\\Documents\\Research and teaching projects\\Data science\\Website\\Images\\Pic 3.png")
+```
+
+For our final analysis, we are only interested in months and seasons, not individual dates, so we convert dates into seasons and months.
+The code below picks between ranges of dates and assigns a corresponding season (I got this code from https://stackoverflow.com/questions/9500114/find-which-season-a-particular-date-belongs-to). 
+```{r, echo = TRUE, warning=FALSE, message=FALSE}
+# DATES is a name that we specify to refer to the argument of
+# the function "getSeasons".
+# When we call as an example 'getSeasons("2020-05-27")', 
+# DATES *inside* the function will have the value "2020-05-27". I chose the date ranges between the solstices and equinoxes to determine each season. 
+getSeason <- function(DATES) {
+  WS <- as.Date("2019-12-21", format = "%Y-%m-%d") # Winter Solstice
+  SE <- as.Date("2019-3-21",  format = "%Y-%m-%d") # Spring Equinox
+  SS <- as.Date("2019-6-21",  format = "%Y-%m-%d") # Summer Solstice
+  FE <- as.Date("2019-9-21",  format = "%Y-%m-%d") # Fall Equinox
+  
+  # Convert dates from any year to 2019 dates
+  d <- as.Date(strftime(DATES, format="2019-%m-%d"))
+  
+  ifelse (d >= WS | d < SE, "Winter",
+          ifelse (d >= SE & d < SS, "Spring",
+                  ifelse (d >= SS & d < FE, "Summer", "Fall")))
+}
+```
+
+Then we define month name using a similar function as above
+```{r, echo = TRUE, warning=FALSE, message=FALSE}
+getMonth <- function(DATES) {
+  strftime(DATES, "%B")
+}
+```
+
+I then create a new dataframe adding two new columns, season and month
+```{r, echo = TRUE, warning=FALSE, message=FALSE}
+mydataframe2 <- cbind(mydataframe1, season=getSeason(mydataframe1$date), month=getMonth(mydataframe1$date))
+```
+
+```{r, echo = FALSE, warning=FALSE, message=FALSE}
+knitr::kable(
+  mydataframe2[1:10, ], caption = "mydataframe2, rows 1-10"
+)
+```
+
+I then create a new dataframe to add the SWD totals (not separated by sexes anymore) per trap for spring, summer, and June (the outcome variables I am ultimately interested in)
+```{r, echo = TRUE, warning=FALSE, message=FALSE}
+mydataframe3 <- mydataframe2 %>% 
+  group_by(trap_ID) %>% 
+  summarise(total_SWD_spring = sum(count[season=="Spring"], na.rm= TRUE),
+            total_SWD_summer = sum(count[season=="Summer"], na.rm= TRUE),
+            SWD_June = sum(count[month=="June"], na.rm= TRUE)
+            )
+```
+
+```{r, echo = FALSE, warning=FALSE, message=FALSE}
+knitr::kable(
+  mydataframe3[1:10, ], caption = "mydataframe3, rows 1-10"
+)
+```
+
+So now we have all SWD trap counts for each trap ID, but there is still more information relevant to each trap that we need to add from previous years.
+
+Here I load an old dataframe with data from previous years 2017-2018, to which we will bind the new data from 2019 (showing only first 10 rows)
+```{r, echo = TRUE, warning=FALSE, message=FALSE}
+mydataframe4 <- read.csv("C:\\Users\\rendonda\\Documents\\Oregon State\\Datasheets\\SWD wild sites\\SWD traps Hood River Wasco.csv", stringsAsFactors=FALSE)
+```
+
+```{r, echo = FALSE, warning=FALSE, message=FALSE}
+knitr::kable(
+  mydataframe4[1:10, ], caption = "mydataframe4, rows 1-10"
+)
+```
+
+In dataframe4 (from previous years) we have information for each trap_ID such as location, latitude, longitude, setting, etc... But we still don't have that information bound to mydataframe3 (from 2019)
+
+To add the additional needed column variables to the 2019 data, we need to join the data from mydataframe3 and mydataframe4 by trap_ID. Here we are only using the mydataframe4 rows from 2018 (because in 2018 there were more weather stations than in 2017). There are additional traps in mydataframe3 that are not in mydataframe4, but here we are ignoring them (inner_join instead of left_join). 
+The command inner_join gets the intersection of both dataframes, while left_join gets all the rows in mydataframe3 with data added from mydataframe4. We are not using left_join, because in this case we want to get rid of rows in mydataframe3 that don't have corresponding entries in mydataframe4.
+```{r, echo = TRUE, warning=FALSE, message=FALSE}
+mydataframe5 <- mydataframe3 %>% 
+  inner_join(mydataframe4 %>% filter(year == 2018) %>% 
+              select(trap_ID, town, host, management, setting, lure, latitude,
+                   longitude, northing_UTM, easting_UTM, elevation_m,
+                   weather_station_uspest), 
+              by="trap_ID") %>% 
+  add_column(year = 2019)
+```
+
+The resulting dataframe5 is a 2019 dataframe with all the column variables added
+```{r, echo = FALSE, warning=FALSE, message=FALSE}
+knitr::kable(
+  mydataframe5[1:10, ], caption = "mydataframe5, rows 1-10"
+)
+```
+
+Then we add mydataframe5 (2019) to mydataframe4 (all previous years), ensuring that all the columns in mydataframe4 that are not present in mydataframe5 are NAs, to be filled later.
+```{r, echo = TRUE, warning=FALSE, message=FALSE}
+mydataframe6 <- dplyr::bind_rows(mydataframe4, mydataframe5)
+```
+
+```{r, echo = FALSE, warning=FALSE, message=FALSE}
+knitr::kable(
+  mydataframe6[1:10, ], caption = "mydataframe6, rows 1-10"
+)
+```
+
+This concludes the first part of data cleanup from trap data. Now we have all the SWD catch information, but we still need to add the weather station information for 2019. 
+
+# Part 2: Weather station data
+
+Each trap site is associated to a nearby weather station. The codes and location for each weather station were obtained from www.uspest.org. The data for a particular weather station looks like this:
+```{r, echo = FALSE, warning=FALSE, message=FALSE}
+knitr::include_graphics("Images/Pic_4.png")
+```
+
+Again, this is a mess because it has no clear headers, and we have temperature and precipitation data for every day that we will need to eventually transform.
+
+First, we use mydataframe5 which already had all the variable information for 2019 data. Then, we need to select the weather station codes to search for. This chunk selects the unique weather station codes needed from mydataframe5 without duplicates (because some trap sites share the same weather station, therefore the same weather station code may be listed more than once)
+```{r, echo = TRUE, warning=FALSE, message=FALSE}
+weather_station_uspest_codes19 <- unique(mydataframe5$weather_station_uspest)
+```
+
+I am going to use the library curl, to download information from websites.  
+```{r, echo = TRUE, warning=FALSE, message=FALSE}
+library(curl) 
+
+#First, I define a variable for the URL
+uspest_website <- "https://uspest.org/data/" 
+
+# Then, I specify a destination folder to save all the downloaded data
+destination_folder <- "~/Oregon State/Datasheets/SWD wild sites/Weather station data/US pest stations/DD models/2019/" 
+```
+
+Then we download all data from uspest.org. This for-loop searches each weather station code in weather_station_uspest_codes19, downloads the corresponding data, and then saves the results to the destination folder specified above
+```{r, echo = TRUE, warning=FALSE, message=FALSE}
+# weather_station_code is a name we give to the variable inside the for-loop which has the current value of the weather station for each iteration
+for (weather_station_code in weather_station_uspest_codes19) {
+  curl_download(url=paste(uspest_website, weather_station_code, "19.txt", sep=""), destfile=paste(destination_folder, "2019 ", weather_station_code, ".txt", sep="")) #this specifies the destination folder defined above and saves as text
+}
+```
+
+So now this folder with all the downloaded data for each weather station looks like this:
+```{r, echo = FALSE, warning=FALSE, message=FALSE}
+knitr::include_graphics("Images/Pic_5.png")
+```
+
+And each individual .txt file looks like this:
+```{r, echo = FALSE, warning=FALSE, message=FALSE}
+knitr::include_graphics("Images/Pic_6.png")
+```
+
+This is still a mess, it does not have proper headings, and we don't need daily data, and eventually the weather variables that we want in the final analysis are the ones shown here in yellow (from an old 2018 database)...
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+knitr::include_graphics("Images/Pic_7.png")
+# Which is maximum and minimum temperatures during each season, number of days below 0 and -5 during winter, and cumulative degree days (DD) and total precipitation for each season
+```
+
+To get there, this for-loop searches each one of the weather station .txt files, adds a column for cumulative sum of degree days (DD), a column for variable names (headers), and creates a .csv file for each in the same folder
+```{r, echo=TRUE, warning=FALSE, message=FALSE}
+#Extract column names from an old dataframe (in this case an existing 2017 dataframe)
+col_names <- colnames(read.csv("~\\Oregon State\\Datasheets\\SWD wild sites\\Weather station data\\US pest stations\\DD models\\2017 C5099.csv"))
+
+# weather_station_code is a name we give to the variable inside the for-loop which has the current value of the weather station for each iteration
+for (weather_station_code in weather_station_uspest_codes19) {
+  mydataframe8 <- read.table(paste(destination_folder, "2019 ", weather_station_code, ".txt", sep=""), skip = 1) # skip = 1 skips the first row because they are not variable names
+  mydataframe8 <- cbind(mydataframe8, cumsum(mydataframe8[,6])) # Adds the cumulative sum from the 6th column (DD)
+  names(mydataframe8)<- col_names #Assigns column names as defined above
+  write.csv(mydataframe8, paste(destination_folder, "2019 ", weather_station_code, ".csv", sep=""), row.names = FALSE )
+} #row.names = FALSE so that it does not add an additional column with row names
+```
+
+So now each .csv file looks like this: 
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+knitr::include_graphics("Images/Pic_8.png")
+```
+
+We then create an empty dataset with two column variables, station and year. We had already previously created mydataframe5 which only had 2019 information. This weather_station_list will be used in the chunks below
+```{r, echo=TRUE, warning=FALSE, message=FALSE}
+weather_station_list <- mydataframe5 %>% 
+  select(year, weather_station_uspest) 
+names(weather_station_list) <- c("year", "station")
+```
+
+The next chunk creates an empty data frame (pre-filled with NA) to store all the aggregated information, by manually writing all the column names for the specific weather variables I want in the final analysis. The column names can also be automatically extracted using a similar code as above when there is an existing database, but I wanted to show how to do this when one wants to specify column names by hand. 
+```{r, echo=TRUE, warning=FALSE, message=FALSE}
+# Get number of items in the list
+num_items <- nrow(weather_station_list)
+
+weather_variables <- data.frame(weather_station_uspest=rep(NA, num_items), tmin_winter=rep(NA, num_items), tmax_winter=rep(NA, num_items), tmin_spring=rep(NA, num_items), tmax_spring=rep(NA, num_items), tmin_summer=rep(NA, num_items), tmax_summer=rep(NA, num_items), days_below_minus_5_winter=rep(NA, num_items), days_below_zero_winter=rep(NA, num_items), DD_winter=rep(NA, num_items), DD_spring=rep(NA, num_items), DD_summer=rep(NA, num_items), precipitation_winter=rep(NA, num_items), precipitation_spring=rep(NA, num_items), precipitation_summer=rep(NA, num_items))
+```
+
+```{r, echo = FALSE, warning=FALSE, message=FALSE}
+knitr::kable(
+  weather_variables[1:10, ]
+)
+```
+
+The code below computes values for days below -5, days below 0, DD winter/spring/summer, precipitation winter/spring/summer for all weather stations. It goes through every single .csv file for each weather station in the folder, and then compiles all the values into a single dataframe. It uses weather_station_list to search all the corresponding .csv files that have the name format "year station.csv"
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results= 'hide'}
+#function to convert inches to mm (precipitation)
+inchesToMM <- function(length_inch) {
+  return (length_inch * 25.4)
+}
+# Go through the entire list
+for(n in seq(1, num_items)) {
+  # Make sure there is year and station available for that item
+  if (!is.na(weather_station_list$year[n]) && !is.na(weather_station_list$station[n])) {
+    # Create file name based on year and station identifier
+    file_name <- paste("C:/Users/rendonda/Documents/Oregon State/Datasheets/SWD wild sites/Weather station data/US pest stations/DD models/2019/", weather_station_list$year[n], " ", weather_station_list$station[n], ".csv", sep="")
+    print(file_name)
+    if (file.exists(file_name)) {
+      # Read in weather station data file
+      data <- read.csv(file_name, na.strings = "M", stringsAsFactors = FALSE)
+      
+      # Add column with temperatures converted to Celsius and rain inches converted to MM
+      data <- cbind(data, rain_mm=inchesToMM(data$precip))
+
+      # Create subsets of data corresponding to each season / year
+      if (weather_station_list$year[n] == 2019) {
+        data$Date = as.Date(paste("2019-",sprintf("%02d-%02d", data$mn,data$day),sep="")) #create a year-month-day column
+        date_start <- "2018-12-21"
+        date_winter <- "2019-03-20"
+        date_spring <- "2019-06-20"
+        date_summer <- "2019-09-20"
+      }
+      data_winter <- data %>% filter(Date > date_start & Date < date_winter)
+      data_spring <- data %>% filter(Date > date_start & Date < date_spring)
+      data_summer <- data %>% filter(Date > date_start & Date < date_summer)
+      # Create subsets of data corresponding to each season only
+      if (weather_station_list$year[n] == 2019) {
+        weather_variables$DD_winter[n] <- data$CUMDD10[data$Date == as.Date("2019-03-20")]
+        weather_variables$DD_spring[n] <- data$CUMDD10[data$Date == as.Date("2019-06-20")]
+        weather_variables$DD_summer[n] <- data$CUMDD10[data$Date == as.Date("2019-09-20")]
+        data_winter_only <- data %>% filter(Date > "2018-12-21" & Date < "2019-03-20")
+        data_spring_only <- data %>% filter(Date > "2019-03-21" & Date < "2019-06-20")
+        data_summer_only <- data %>% filter(Date > "2019-06-21" & Date < "2019-09-20")
+      }      
+      weather_variables$weather_station_uspest[n] <- weather_station_list$station[n]
+      weather_variables$tmin_winter[n] <- mean(data_winter_only$min)
+      weather_variables$tmax_winter[n] <- mean(data_winter_only$max)
+      weather_variables$tmin_spring[n] <- mean(data_spring_only$min)
+      weather_variables$tmax_spring[n] <- mean(data_spring_only$max)
+      weather_variables$tmin_summer[n] <- mean(data_summer_only$min)
+      weather_variables$tmax_summer[n] <- mean(data_summer_only$max)
+      
+      weather_variables$days_below_minus_5_winter[n] <- sum(data_winter$min < -5.0)
+      weather_variables$days_below_zero_winter[n] <- sum(data_winter$min < 0.0)
+      
+      if (sum(data_winter$rain_mm, na.rm = TRUE) >= 20.0) {
+        weather_variables$precipitation_winter[n] <- sum(data_winter$rain_mm)
+      }
+      if (sum(data_spring$rain_mm, na.rm = TRUE) >= 20.0) {
+        weather_variables$precipitation_spring[n] <- sum(data_spring$rain_mm)
+      }
+      if (sum(data_summer$rain_mm, na.rm = TRUE) >= 20.0) {
+        weather_variables$precipitation_summer[n] <- sum(data_summer$rain_mm)
+      }
+      
+    } else {
+      print(paste("File not found! ", file_name, sep=""))
+    } 
+  } else {
+    print(paste("Weather station list NA! ", file_name, sep=""))
+  }
+}
+
+# Save resulting dataframe as .csv file
+write.csv(weather_variables, "C:/Users/rendonda/Documents/Oregon State/Datasheets/SWD wild sites/Weather station data/US pest stations/DD models/clean weather data/weather_station_list_results_2019.csv", na="", row.names = FALSE)
+```
+
+And this is then what the resulting dataframe with the weather variables for 2019 looks like:
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+knitr::include_graphics("Images/Pic_9.png")
+```
+
+Which I can then manually copy and paste into the larger database, or bind using inner_join or left_join. The end result is this, highlighting 2019 newly formatted and added data under the old 2017 data. This same script can be reused for 2020, and any following year...
+```{r, echo= FALSE, warning=FALSE, message=FALSE}
+knitr::include_graphics("Images/Pic_10.png")
+```

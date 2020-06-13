@@ -1,0 +1,2425 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+<meta name="author" content="Dalila Rendon" />
+
+
+<title>Cleaning weather station and SWD trap data</title>
+
+<script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/bootstrap.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/default.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+<style type="text/css">
+h1 {
+  font-size: 34px;
+}
+h1.title {
+  font-size: 38px;
+}
+h2 {
+  font-size: 30px;
+}
+h3 {
+  font-size: 24px;
+}
+h4 {
+  font-size: 18px;
+}
+h5 {
+  font-size: 16px;
+}
+h6 {
+  font-size: 12px;
+}
+.table th:not([align]) {
+  text-align: left;
+}
+</style>
+
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+</style>
+
+
+<style type="text/css">
+/* padding for bootstrap navbar */
+body {
+  padding-top: 51px;
+  padding-bottom: 40px;
+}
+/* offset scroll position for anchor links (for fixed navbar)  */
+.section h1 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h2 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h3 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h4 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h5 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h6 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #ffffff;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script>
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.parent().addClass('active');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "&#xe258;";
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">Dalila Rendon R data scripts</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li>
+  <a href="swd_weather_cleanup.html">Cleaning weather station and SWD trap data</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div class="fluid-row" id="header">
+
+
+
+<h1 class="title toc-ignore">Cleaning weather station and SWD trap data</h1>
+<h4 class="author">Dalila Rendon</h4>
+<h4 class="date">6/13/2020</h4>
+
+</div>
+
+
+<p>I often have to analyze data from multiple sources, such as websites, or collected from other stakeholders. In this case study, I collect weather data obtained from weather stations, and trap data for the Spotted-wing drosophila (SWD) collected by extension agents in a cherry-growing region.</p>
+<p>Extension data is meant to be user-friendly and easy to understand for multiple audiences such as growers or field scouts. But that also means that it is a mess for data analysis and it needs a lot of cleaning up.</p>
+<p>Here we are trying to understand what is the relationship between several weather parameters, and the abundance of spotted-wing drosophila (SWD) from multiple trap locations. The final dataset to analyze should look like this: <img src="Images/Pic_1.PNG" width="950" /></p>
+<p>Columns A to M are constant variables, and provide information about each site. Columns N to end are SWD trap data, and summarized weather parameters such as maximum and minimum temperatures, degree days, precipitation, etc. I had done this dataset by hand for years 2017 and 2018 when I didn’t know any better, and for 2019 I wrote the following script to tidy, organize, and bind the data. I show this here with a lot of intermediate steps for clarity, but it can also be done in a single chunk connected by pipes without the need of creating intermediate dataframes.</p>
+<div id="part-1-swd-trap-counts" class="section level1">
+<h1>Part 1: SWD trap counts</h1>
+<p>First, this is what the SWD raw trap count data looks like, courtesy of Oregon State University extension service in Wasco county. <img src="Images/Pic_2.PNG" width="958" /></p>
+<p>This dataset is meant to be easy to understand for stakeholders who consult it every week, but it is a data analysis nightmare. It has two headers, in row 1 it shows each date of sampling plus the totals, and the second header shows information about the sites. It also has two extra rows at the bottom showing total and average. The other issue is that it separates SWD by sexes, but in the end I only want total number.</p>
+<p>I am going to clean this dataset so that at the end we are left with a dataframe that shows the total number of SWD collected in spring, in summer, and in the month of June.</p>
+<p>First, import the raw dataset shown above. I use stringsAsFactors=FALSE to prevent R from converting all values into factors. Especially when there are headers or multiple headers, converting all values into factors does not make sense, as it will assign a level to “male SWD”. Rather, we want R to treat everything as a string and convert values manually.</p>
+<pre class="r"><code>library(tidyverse)
+raw_swd &lt;- read.csv(&quot;C:\\Users\\rendonda\\Documents\\Oregon State\\Datasheets\\SWD wild sites\\Wasco County 2019.csv&quot;, header=FALSE, stringsAsFactors=FALSE)</code></pre>
+<table>
+<caption>raw_swd, rows 1-10</caption>
+<thead>
+<tr class="header">
+<th align="left">V1</th>
+<th align="left">V2</th>
+<th align="left">V3</th>
+<th align="left">V4</th>
+<th align="left">V5</th>
+<th align="left">V6</th>
+<th align="left">V7</th>
+<th align="left">V8</th>
+<th align="left">V9</th>
+<th align="left">V10</th>
+<th align="left">V11</th>
+<th align="left">V12</th>
+<th align="left">V13</th>
+<th align="left">V14</th>
+<th align="left">V15</th>
+<th align="left">V16</th>
+<th align="left">V17</th>
+<th align="left">V18</th>
+<th align="left">V19</th>
+<th align="left">V20</th>
+<th align="left">V21</th>
+<th align="left">V22</th>
+<th align="left">V23</th>
+<th align="left">V24</th>
+<th align="left">V25</th>
+<th align="left">V26</th>
+<th align="left">V27</th>
+<th align="left">V28</th>
+<th align="left">V29</th>
+<th align="left">V30</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left">Totals</td>
+<td align="left">Totals</td>
+<td align="left">8/20/2019</td>
+<td align="left">8/20/2019</td>
+<td align="left">8/8/2019</td>
+<td align="left">8/8/2019</td>
+<td align="left">7/31/2019</td>
+<td align="left">7/31/2019</td>
+<td align="left">7/24/2019</td>
+<td align="left">7/24/2019</td>
+<td align="left">7/15/2019</td>
+<td align="left">7/15/2019</td>
+<td align="left">7/7/2019</td>
+<td align="left">7/7/2019</td>
+<td align="left">6/21/2019</td>
+<td align="left">6/21/2019</td>
+<td align="left">6/6/2019</td>
+<td align="left">6/6/2019</td>
+<td align="left">5/31/2019</td>
+<td align="left">5/31/2019</td>
+<td align="left">5/24/2019</td>
+<td align="left">5/24/2019</td>
+<td align="left">5/17/2019</td>
+<td align="left">5/17/2019</td>
+<td align="left">5/10/2019</td>
+<td align="left">5/10/2019</td>
+</tr>
+<tr class="even">
+<td align="left">location 1</td>
+<td align="left">crop or host</td>
+<td align="left">location 2</td>
+<td align="left">Trap ID#</td>
+<td align="left">male SWD</td>
+<td align="left">female SWD</td>
+<td align="left">male SWD</td>
+<td align="left">Female SWD</td>
+<td align="left">male SWD</td>
+<td align="left">Female SWD</td>
+<td align="left">male SWD</td>
+<td align="left">Female SWD</td>
+<td align="left">male swd</td>
+<td align="left">female swd</td>
+<td align="left">male swd</td>
+<td align="left">female swd</td>
+<td align="left">male swd</td>
+<td align="left">female swd</td>
+<td align="left">male SWD</td>
+<td align="left">female SWD</td>
+<td align="left">male SWD</td>
+<td align="left">female SWD</td>
+<td align="left">Male SWD</td>
+<td align="left">Female SWD</td>
+<td align="left">Male swd</td>
+<td align="left">Female SWD</td>
+<td align="left">male SWD</td>
+<td align="left">female SWD</td>
+<td align="left">male SWD</td>
+<td align="left">female SWD</td>
+</tr>
+<tr class="odd">
+<td align="left">The Dalles</td>
+<td align="left">cherry-comm. orch.</td>
+<td align="left">Cherry Heights</td>
+<td align="left">301</td>
+<td align="left">13</td>
+<td align="left">28</td>
+<td align="left">9</td>
+<td align="left">90</td>
+<td align="left">4</td>
+<td align="left">121</td>
+<td align="left">3</td>
+<td align="left">78</td>
+<td align="left">1</td>
+<td align="left">19</td>
+<td align="left">0</td>
+<td align="left">10</td>
+<td align="left">32</td>
+<td align="left">0</td>
+<td align="left">0</td>
+<td align="left">0</td>
+<td align="left">0</td>
+<td align="left">8</td>
+<td align="left">0</td>
+<td align="left">9</td>
+<td align="left">0</td>
+<td align="left">1</td>
+<td align="left">13</td>
+<td align="left">17</td>
+<td align="left">0</td>
+<td align="left">1</td>
+</tr>
+<tr class="even">
+<td align="left">The Dalles</td>
+<td align="left">plum &amp; blackberry-unmanaged</td>
+<td align="left">Mill Creek Rd</td>
+<td align="left">302</td>
+<td align="left">27</td>
+<td align="left">66</td>
+<td align="left">11</td>
+<td align="left">199</td>
+<td align="left">4</td>
+<td align="left">88</td>
+<td align="left">0</td>
+<td align="left">107</td>
+<td align="left">1</td>
+<td align="left">41</td>
+<td align="left">0</td>
+<td align="left">29</td>
+<td align="left">0</td>
+<td align="left">0</td>
+<td align="left">0</td>
+<td align="left">0</td>
+<td align="left">4</td>
+<td align="left">4</td>
+<td align="left">8</td>
+<td align="left">12</td>
+<td align="left">4</td>
+<td align="left">11</td>
+<td align="left">11</td>
+<td align="left">37</td>
+<td align="left">0</td>
+<td align="left">6</td>
+</tr>
+<tr class="odd">
+<td align="left">The Dalles</td>
+<td align="left">cherry-comm. orch.</td>
+<td align="left">Orchard Rd (OVF on Skyline)</td>
+<td align="left">303</td>
+<td align="left">4</td>
+<td align="left">20</td>
+<td align="left">2</td>
+<td align="left">159</td>
+<td align="left">11</td>
+<td align="left">368</td>
+<td align="left">0</td>
+<td align="left">82</td>
+<td align="left">0</td>
+<td align="left">28</td>
+<td align="left">0</td>
+<td align="left">17</td>
+<td align="left">13</td>
+<td align="left">0</td>
+<td align="left">0</td>
+<td align="left">0</td>
+<td align="left">1</td>
+<td align="left">3</td>
+<td align="left">0</td>
+<td align="left">3</td>
+<td align="left">0</td>
+<td align="left">5</td>
+<td align="left">3</td>
+<td align="left">7</td>
+<td align="left">0</td>
+<td align="left">5</td>
+</tr>
+<tr class="even">
+<td align="left">The Dalles</td>
+<td align="left">raspberry-garden</td>
+<td align="left">Dry Hollow Lane</td>
+<td align="left">305</td>
+<td align="left">0</td>
+<td align="left">3</td>
+<td align="left">4</td>
+<td align="left">44</td>
+<td align="left">6</td>
+<td align="left">10</td>
+<td align="left">3</td>
+<td align="left">3</td>
+<td align="left">0</td>
+<td align="left">0</td>
+<td align="left">0</td>
+<td align="left">3</td>
+<td align="left">20</td>
+<td align="left">0</td>
+<td align="left">0</td>
+<td align="left">0</td>
+<td align="left">0</td>
+<td align="left">2</td>
+<td align="left">0</td>
+<td align="left">1</td>
+<td align="left">0</td>
+<td align="left">0</td>
+<td align="left">0</td>
+<td align="left">2</td>
+<td align="left">1</td>
+<td align="left">0</td>
+</tr>
+<tr class="odd">
+<td align="left">The Dalles</td>
+<td align="left">cherry-comm. orch.</td>
+<td align="left">Three Mile Rd.</td>
+<td align="left">307</td>
+<td align="left">0</td>
+<td align="left">2</td>
+<td align="left">5</td>
+<td align="left">348</td>
+<td align="left">1</td>
+<td align="left">123</td>
+<td align="left">1</td>
+<td align="left">76</td>
+<td align="left">0</td>
+<td align="left">51</td>
+<td align="left">0</td>
+<td align="left">69</td>
+<td align="left">50</td>
+<td align="left">0</td>
+<td align="left">0</td>
+<td align="left">1</td>
+<td align="left">0</td>
+<td align="left">2</td>
+<td align="left">0</td>
+<td align="left">0</td>
+<td align="left">0</td>
+<td align="left">0</td>
+<td align="left">0</td>
+<td align="left">0</td>
+<td align="left">0</td>
+<td align="left">1</td>
+</tr>
+<tr class="even">
+<td align="left">The Dalles</td>
+<td align="left">cherry-comm. orch.</td>
+<td align="left">Three Mile Cemetery Block</td>
+<td align="left">309</td>
+<td align="left">12</td>
+<td align="left">40</td>
+<td align="left">24</td>
+<td align="left">281</td>
+<td align="left">5</td>
+<td align="left">74</td>
+<td align="left">1</td>
+<td align="left">72</td>
+<td align="left">1</td>
+<td align="left">26</td>
+<td align="left">0</td>
+<td align="left">14</td>
+<td align="left">8</td>
+<td align="left">0</td>
+<td align="left">0</td>
+<td align="left">0</td>
+<td align="left">3</td>
+<td align="left">6</td>
+<td align="left">2</td>
+<td align="left">8</td>
+<td align="left">3</td>
+<td align="left">2</td>
+<td align="left">4</td>
+<td align="left">24</td>
+<td align="left">0</td>
+<td align="left">6</td>
+</tr>
+<tr class="odd">
+<td align="left">The Dalles</td>
+<td align="left">cherry-comm. orch.</td>
+<td align="left">Steele Rd</td>
+<td align="left">310</td>
+<td align="left">18</td>
+<td align="left">25</td>
+<td align="left">2</td>
+<td align="left">170</td>
+<td align="left">0</td>
+<td align="left">35</td>
+<td align="left">2</td>
+<td align="left">33</td>
+<td align="left">1</td>
+<td align="left">54</td>
+<td align="left">0</td>
+<td align="left">41</td>
+<td align="left">40</td>
+<td align="left">0</td>
+<td align="left">0</td>
+<td align="left">0</td>
+<td align="left">4</td>
+<td align="left">4</td>
+<td align="left">9</td>
+<td align="left">6</td>
+<td align="left">5</td>
+<td align="left">7</td>
+<td align="left">0</td>
+<td align="left">8</td>
+<td align="left">0</td>
+<td align="left">4</td>
+</tr>
+<tr class="even">
+<td align="left">The Dalles</td>
+<td align="left">cherry-comm. orch.</td>
+<td align="left">Benson Rd. via Five Mile</td>
+<td align="left">311</td>
+<td align="left">1</td>
+<td align="left">3</td>
+<td align="left">0</td>
+<td align="left">23</td>
+<td align="left">0</td>
+<td align="left">14</td>
+<td align="left">2</td>
+<td align="left">26</td>
+<td align="left">0</td>
+<td align="left">6</td>
+<td align="left">0</td>
+<td align="left">9</td>
+<td align="left">7</td>
+<td align="left">0</td>
+<td align="left">0</td>
+<td align="left">0</td>
+<td align="left">1</td>
+<td align="left">6</td>
+<td align="left">0</td>
+<td align="left">1</td>
+<td align="left">0</td>
+<td align="left">0</td>
+<td align="left">0</td>
+<td align="left">2</td>
+<td align="left">0</td>
+<td align="left">0</td>
+</tr>
+</tbody>
+</table>
+<p>We need to get the number of rows and columns in .csv that contain actual data. In this case,</p>
+<pre class="r"><code># we delete 4 rows we will not use, because there are 2 headers and 2 rows with totals and averages at the bottom that we don&#39;t need. 
+num_rows &lt;- nrow(raw_swd)-4
+# Then specify row number (3rd) at which actual data starts in CSV
+start_row &lt;- 3
+# Get number of columns in CSV
+num_columns &lt;- ncol(raw_swd)
+# Column number at which actual data (i.e., the dates) starts in CSV
+start_column &lt;- 7</code></pre>
+<p>Then I create an empty dataframe, where I manually add the column names from variables that I am interested in</p>
+<pre class="r"><code>mydataframe1 &lt;- data.frame(location1 = character(),
+                           crop_host = character(),
+                           location2 = character(),
+                           trap_ID = integer(),
+                           sex = character(),
+                           date = as.Date(character()),
+                           count = integer()
+                           )</code></pre>
+<p>I then run a for-loop to extract information from each row and column in raw_swd. In for-loops, we define a variable that contains the counter in each loop iteration. Here, we name this variable ‘row_index’.</p>
+<pre class="r"><code># In the outer loop, we sequentially go through all the data rows.
+for (row_index in seq(start_row, num_rows+1)) {
+  
+  # In the inner loop, we go through the dates with pairs of (male, female) columns. We start at &#39;start_column&#39; defined above and go through to the last column, incrementing our counter &#39;col_index&#39; by 2. That means that &#39;col_index&#39; is the index of the column with the male SWD counts.
+  # When we access the counts for the female SWD further down, we use &#39;col_index+1&#39; to get the value at the next column.
+  for (col_index in seq(start_column, num_columns, by=2)) {
+  
+  # We then create a data row with the count of male SWD for the current trap and the current date. The current trap locations/crop host/TrapID# are in columns 1,2,3,4 in the current row. The current date is in first row of the current column.
+    myrow_male &lt;- data.frame(location1 = as.character(raw_swd[row_index,1]),
+                             crop_host = as.character(raw_swd[row_index,2]),
+                             location2 = as.character(raw_swd[row_index,3]),
+                             trap_ID = as.integer(raw_swd[row_index,4]),
+                             sex = as.character(&quot;male&quot;),
+                             date = as.Date(raw_swd[1,col_index], format=&quot;%m/%d/%Y&quot;),
+                             count = as.integer(raw_swd[row_index,col_index])
+    )
+    # We add the male SWD data row to our empty dataframe
+    mydataframe1 &lt;- rbind(mydataframe1, myrow_male)
+    
+    # Then, we create a data row with the count of female SWD for the current trap and the current date. The current trap locations/crop host/TrapID# are in columns 1,2,3,4 in the current row. The current date is in first row of the current column. As mentioned at the inner loop above, we specify &#39;col_index+1&#39; to access the female SWD counts, because we go through dates with pairs of (male, female) counts, and col_index points to the male column.
+    myrow_female &lt;- data.frame(location1 = as.character(raw_swd[row_index,1]),
+                               crop_host = as.character(raw_swd[row_index,2]),
+                               location2 = as.character(raw_swd[row_index,3]),
+                               trap_ID = as.integer(raw_swd[row_index,4]),
+                               sex = as.character(&quot;female&quot;),
+                               date = as.Date(raw_swd[1,col_index+1], format=&quot;%m/%d/%Y&quot;),
+                               count = as.integer(raw_swd[row_index,col_index+1])
+    )
+    # We add the female SWD data row to our dataframe. 
+    mydataframe1 &lt;- rbind(mydataframe1, myrow_female)
+  }
+}
+
+# For each iteration for the whole loop above, it adds a new male and female row</code></pre>
+<p>This is what the filled dataframe now looks like (showing first 10 rows):</p>
+<table>
+<caption>mydataframe1</caption>
+<thead>
+<tr class="header">
+<th align="left">location1</th>
+<th align="left">crop_host</th>
+<th align="left">location2</th>
+<th align="right">trap_ID</th>
+<th align="left">sex</th>
+<th align="left">date</th>
+<th align="right">count</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">The Dalles</td>
+<td align="left">cherry-comm. orch.</td>
+<td align="left">Cherry Heights</td>
+<td align="right">301</td>
+<td align="left">male</td>
+<td align="left">2019-08-20</td>
+<td align="right">9</td>
+</tr>
+<tr class="even">
+<td align="left">The Dalles</td>
+<td align="left">cherry-comm. orch.</td>
+<td align="left">Cherry Heights</td>
+<td align="right">301</td>
+<td align="left">female</td>
+<td align="left">2019-08-20</td>
+<td align="right">90</td>
+</tr>
+<tr class="odd">
+<td align="left">The Dalles</td>
+<td align="left">cherry-comm. orch.</td>
+<td align="left">Cherry Heights</td>
+<td align="right">301</td>
+<td align="left">male</td>
+<td align="left">2019-08-08</td>
+<td align="right">4</td>
+</tr>
+<tr class="even">
+<td align="left">The Dalles</td>
+<td align="left">cherry-comm. orch.</td>
+<td align="left">Cherry Heights</td>
+<td align="right">301</td>
+<td align="left">female</td>
+<td align="left">2019-08-08</td>
+<td align="right">121</td>
+</tr>
+<tr class="odd">
+<td align="left">The Dalles</td>
+<td align="left">cherry-comm. orch.</td>
+<td align="left">Cherry Heights</td>
+<td align="right">301</td>
+<td align="left">male</td>
+<td align="left">2019-07-31</td>
+<td align="right">3</td>
+</tr>
+<tr class="even">
+<td align="left">The Dalles</td>
+<td align="left">cherry-comm. orch.</td>
+<td align="left">Cherry Heights</td>
+<td align="right">301</td>
+<td align="left">female</td>
+<td align="left">2019-07-31</td>
+<td align="right">78</td>
+</tr>
+<tr class="odd">
+<td align="left">The Dalles</td>
+<td align="left">cherry-comm. orch.</td>
+<td align="left">Cherry Heights</td>
+<td align="right">301</td>
+<td align="left">male</td>
+<td align="left">2019-07-24</td>
+<td align="right">1</td>
+</tr>
+<tr class="even">
+<td align="left">The Dalles</td>
+<td align="left">cherry-comm. orch.</td>
+<td align="left">Cherry Heights</td>
+<td align="right">301</td>
+<td align="left">female</td>
+<td align="left">2019-07-24</td>
+<td align="right">19</td>
+</tr>
+<tr class="odd">
+<td align="left">The Dalles</td>
+<td align="left">cherry-comm. orch.</td>
+<td align="left">Cherry Heights</td>
+<td align="right">301</td>
+<td align="left">male</td>
+<td align="left">2019-07-15</td>
+<td align="right">0</td>
+</tr>
+<tr class="even">
+<td align="left">The Dalles</td>
+<td align="left">cherry-comm. orch.</td>
+<td align="left">Cherry Heights</td>
+<td align="right">301</td>
+<td align="left">female</td>
+<td align="left">2019-07-15</td>
+<td align="right">10</td>
+</tr>
+</tbody>
+</table>
+<p>For our final analysis, we are only interested in months and seasons, not individual dates, so we convert dates into seasons and months. The code below picks between ranges of dates and assigns a corresponding season (I got this code from <a href="https://stackoverflow.com/questions/9500114/find-which-season-a-particular-date-belongs-to" class="uri">https://stackoverflow.com/questions/9500114/find-which-season-a-particular-date-belongs-to</a>).</p>
+<pre class="r"><code># DATES is a name that we specify to refer to the argument of
+# the function &quot;getSeasons&quot;.
+# When we call as an example &#39;getSeasons(&quot;2020-05-27&quot;)&#39;, 
+# DATES *inside* the function will have the value &quot;2020-05-27&quot;. I chose the date ranges between the solstices and equinoxes to determine each season. 
+getSeason &lt;- function(DATES) {
+  WS &lt;- as.Date(&quot;2019-12-21&quot;, format = &quot;%Y-%m-%d&quot;) # Winter Solstice
+  SE &lt;- as.Date(&quot;2019-3-21&quot;,  format = &quot;%Y-%m-%d&quot;) # Spring Equinox
+  SS &lt;- as.Date(&quot;2019-6-21&quot;,  format = &quot;%Y-%m-%d&quot;) # Summer Solstice
+  FE &lt;- as.Date(&quot;2019-9-21&quot;,  format = &quot;%Y-%m-%d&quot;) # Fall Equinox
+  
+  # Convert dates from any year to 2019 dates
+  d &lt;- as.Date(strftime(DATES, format=&quot;2019-%m-%d&quot;))
+  
+  ifelse (d &gt;= WS | d &lt; SE, &quot;Winter&quot;,
+          ifelse (d &gt;= SE &amp; d &lt; SS, &quot;Spring&quot;,
+                  ifelse (d &gt;= SS &amp; d &lt; FE, &quot;Summer&quot;, &quot;Fall&quot;)))
+}</code></pre>
+<p>Then we define month name using a similar function as above</p>
+<pre class="r"><code>getMonth &lt;- function(DATES) {
+  strftime(DATES, &quot;%B&quot;)
+}</code></pre>
+<p>I then create a new dataframe adding two new columns, season and month</p>
+<pre class="r"><code>mydataframe2 &lt;- cbind(mydataframe1, season=getSeason(mydataframe1$date), month=getMonth(mydataframe1$date))</code></pre>
+<table>
+<caption>mydataframe2, rows 1-10</caption>
+<thead>
+<tr class="header">
+<th align="left">location1</th>
+<th align="left">crop_host</th>
+<th align="left">location2</th>
+<th align="right">trap_ID</th>
+<th align="left">sex</th>
+<th align="left">date</th>
+<th align="right">count</th>
+<th align="left">season</th>
+<th align="left">month</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">The Dalles</td>
+<td align="left">cherry-comm. orch.</td>
+<td align="left">Cherry Heights</td>
+<td align="right">301</td>
+<td align="left">male</td>
+<td align="left">2019-08-20</td>
+<td align="right">9</td>
+<td align="left">Summer</td>
+<td align="left">August</td>
+</tr>
+<tr class="even">
+<td align="left">The Dalles</td>
+<td align="left">cherry-comm. orch.</td>
+<td align="left">Cherry Heights</td>
+<td align="right">301</td>
+<td align="left">female</td>
+<td align="left">2019-08-20</td>
+<td align="right">90</td>
+<td align="left">Summer</td>
+<td align="left">August</td>
+</tr>
+<tr class="odd">
+<td align="left">The Dalles</td>
+<td align="left">cherry-comm. orch.</td>
+<td align="left">Cherry Heights</td>
+<td align="right">301</td>
+<td align="left">male</td>
+<td align="left">2019-08-08</td>
+<td align="right">4</td>
+<td align="left">Summer</td>
+<td align="left">August</td>
+</tr>
+<tr class="even">
+<td align="left">The Dalles</td>
+<td align="left">cherry-comm. orch.</td>
+<td align="left">Cherry Heights</td>
+<td align="right">301</td>
+<td align="left">female</td>
+<td align="left">2019-08-08</td>
+<td align="right">121</td>
+<td align="left">Summer</td>
+<td align="left">August</td>
+</tr>
+<tr class="odd">
+<td align="left">The Dalles</td>
+<td align="left">cherry-comm. orch.</td>
+<td align="left">Cherry Heights</td>
+<td align="right">301</td>
+<td align="left">male</td>
+<td align="left">2019-07-31</td>
+<td align="right">3</td>
+<td align="left">Summer</td>
+<td align="left">July</td>
+</tr>
+<tr class="even">
+<td align="left">The Dalles</td>
+<td align="left">cherry-comm. orch.</td>
+<td align="left">Cherry Heights</td>
+<td align="right">301</td>
+<td align="left">female</td>
+<td align="left">2019-07-31</td>
+<td align="right">78</td>
+<td align="left">Summer</td>
+<td align="left">July</td>
+</tr>
+<tr class="odd">
+<td align="left">The Dalles</td>
+<td align="left">cherry-comm. orch.</td>
+<td align="left">Cherry Heights</td>
+<td align="right">301</td>
+<td align="left">male</td>
+<td align="left">2019-07-24</td>
+<td align="right">1</td>
+<td align="left">Summer</td>
+<td align="left">July</td>
+</tr>
+<tr class="even">
+<td align="left">The Dalles</td>
+<td align="left">cherry-comm. orch.</td>
+<td align="left">Cherry Heights</td>
+<td align="right">301</td>
+<td align="left">female</td>
+<td align="left">2019-07-24</td>
+<td align="right">19</td>
+<td align="left">Summer</td>
+<td align="left">July</td>
+</tr>
+<tr class="odd">
+<td align="left">The Dalles</td>
+<td align="left">cherry-comm. orch.</td>
+<td align="left">Cherry Heights</td>
+<td align="right">301</td>
+<td align="left">male</td>
+<td align="left">2019-07-15</td>
+<td align="right">0</td>
+<td align="left">Summer</td>
+<td align="left">July</td>
+</tr>
+<tr class="even">
+<td align="left">The Dalles</td>
+<td align="left">cherry-comm. orch.</td>
+<td align="left">Cherry Heights</td>
+<td align="right">301</td>
+<td align="left">female</td>
+<td align="left">2019-07-15</td>
+<td align="right">10</td>
+<td align="left">Summer</td>
+<td align="left">July</td>
+</tr>
+</tbody>
+</table>
+<p>I then create a new dataframe to add the SWD totals (not separated by sexes anymore) per trap for spring, summer, and June (the outcome variables I am ultimately interested in)</p>
+<pre class="r"><code>mydataframe3 &lt;- mydataframe2 %&gt;% 
+  group_by(trap_ID) %&gt;% 
+  summarise(total_SWD_spring = sum(count[season==&quot;Spring&quot;], na.rm= TRUE),
+            total_SWD_summer = sum(count[season==&quot;Summer&quot;], na.rm= TRUE),
+            SWD_June = sum(count[month==&quot;June&quot;], na.rm= TRUE)
+            )</code></pre>
+<table>
+<caption>mydataframe3, rows 1-10</caption>
+<thead>
+<tr class="header">
+<th align="right">trap_ID</th>
+<th align="right">total_SWD_spring</th>
+<th align="right">total_SWD_summer</th>
+<th align="right">SWD_June</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="right">301</td>
+<td align="right">49</td>
+<td align="right">367</td>
+<td align="right">8</td>
+</tr>
+<tr class="even">
+<td align="right">302</td>
+<td align="right">97</td>
+<td align="right">480</td>
+<td align="right">8</td>
+</tr>
+<tr class="odd">
+<td align="right">303</td>
+<td align="right">27</td>
+<td align="right">680</td>
+<td align="right">4</td>
+</tr>
+<tr class="even">
+<td align="right">305</td>
+<td align="right">6</td>
+<td align="right">93</td>
+<td align="right">2</td>
+</tr>
+<tr class="odd">
+<td align="right">307</td>
+<td align="right">3</td>
+<td align="right">725</td>
+<td align="right">3</td>
+</tr>
+<tr class="even">
+<td align="right">309</td>
+<td align="right">58</td>
+<td align="right">506</td>
+<td align="right">9</td>
+</tr>
+<tr class="odd">
+<td align="right">310</td>
+<td align="right">47</td>
+<td align="right">378</td>
+<td align="right">8</td>
+</tr>
+<tr class="even">
+<td align="right">311</td>
+<td align="right">10</td>
+<td align="right">87</td>
+<td align="right">7</td>
+</tr>
+<tr class="odd">
+<td align="right">312</td>
+<td align="right">57</td>
+<td align="right">374</td>
+<td align="right">8</td>
+</tr>
+<tr class="even">
+<td align="right">315</td>
+<td align="right">32</td>
+<td align="right">1189</td>
+<td align="right">13</td>
+</tr>
+</tbody>
+</table>
+<p>So now we have all SWD trap counts for each trap ID, but there is still more information relevant to each trap that we need to add from previous years.</p>
+<p>Here I load an old dataframe with data from previous years 2017-2018, to which we will bind the new data from 2019 (showing only first 10 rows)</p>
+<pre class="r"><code>mydataframe4 &lt;- read.csv(&quot;C:\\Users\\rendonda\\Documents\\Oregon State\\Datasheets\\SWD wild sites\\SWD traps Hood River Wasco.csv&quot;, stringsAsFactors=FALSE)</code></pre>
+<table>
+<caption>mydataframe4, rows 1-10</caption>
+<thead>
+<tr class="header">
+<th align="right">trap_ID</th>
+<th align="left">town</th>
+<th align="left">host</th>
+<th align="left">management</th>
+<th align="left">setting</th>
+<th align="left">lure</th>
+<th align="left">latitude</th>
+<th align="right">longitude</th>
+<th align="right">northing_UTM</th>
+<th align="right">easting_UTM</th>
+<th align="right">elevation_m</th>
+<th align="right">year</th>
+<th align="left">weather_station_uspest</th>
+<th align="right">first_catch_spring_date</th>
+<th align="right">first_catch_spring_day</th>
+<th align="right">total_SWD_spring</th>
+<th align="right">total_SWD_summer</th>
+<th align="right">total_SWD_winter</th>
+<th align="right">SWD_June</th>
+<th align="right">Tmin_winter</th>
+<th align="right">Tmax_winter</th>
+<th align="right">Tmin_spring</th>
+<th align="right">Tmax_spring</th>
+<th align="right">Tmin_summer</th>
+<th align="left">Tmax_summer</th>
+<th align="right">days_below_5_winter</th>
+<th align="right">days_below_0_winter</th>
+<th align="right">DD_winter</th>
+<th align="right">DD_spring</th>
+<th align="right">DD_summer</th>
+<th align="right">precipitation_winter</th>
+<th align="right">precipitation_spring</th>
+<th align="right">precipitation_summer</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="right">301</td>
+<td align="left">The Dalles</td>
+<td align="left">cherry</td>
+<td align="left">managed</td>
+<td align="left">agricultural</td>
+<td align="left">Trece+ACV</td>
+<td align="left">45.60467</td>
+<td align="right">-121.2275</td>
+<td align="right">5051653</td>
+<td align="right">638219.8</td>
+<td align="right">277</td>
+<td align="right">2018</td>
+<td align="left">E9627</td>
+<td align="right">43245</td>
+<td align="right">145</td>
+<td align="right">3</td>
+<td align="right">5</td>
+<td align="right">NA</td>
+<td align="right">3</td>
+<td align="right">1.1538462</td>
+<td align="right">9.180769</td>
+<td align="right">8.129444</td>
+<td align="right">21.05967</td>
+<td align="right">13.24156</td>
+<td align="left">29.89433333</td>
+<td align="right">6</td>
+<td align="right">27</td>
+<td align="right">36.4</td>
+<td align="right">545.7</td>
+<td align="right">1577.2</td>
+<td align="right">105.410</td>
+<td align="right">162.306</td>
+<td align="right">164.592</td>
+</tr>
+<tr class="even">
+<td align="right">303</td>
+<td align="left">The Dalles</td>
+<td align="left">cherry</td>
+<td align="left">managed</td>
+<td align="left">agricultural</td>
+<td align="left">Trece+ACV</td>
+<td align="left">45.577823</td>
+<td align="right">-121.2211</td>
+<td align="right">5048681</td>
+<td align="right">638785.6</td>
+<td align="right">178</td>
+<td align="right">2018</td>
+<td align="left">F2372</td>
+<td align="right">43227</td>
+<td align="right">127</td>
+<td align="right">3</td>
+<td align="right">11</td>
+<td align="right">NA</td>
+<td align="right">0</td>
+<td align="right">-0.4653846</td>
+<td align="right">8.550769</td>
+<td align="right">6.931889</td>
+<td align="right">21.55711</td>
+<td align="right">11.59844</td>
+<td align="left">30.00411111</td>
+<td align="right">0</td>
+<td align="right">48</td>
+<td align="right">12.0</td>
+<td align="right">507.6</td>
+<td align="right">1474.2</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+</tr>
+<tr class="odd">
+<td align="right">305</td>
+<td align="left">The Dalles</td>
+<td align="left">raspberry</td>
+<td align="left">managed</td>
+<td align="left">agricultural</td>
+<td align="left">Trece+ACV</td>
+<td align="left">45.565197</td>
+<td align="right">-121.1908</td>
+<td align="right">5047332</td>
+<td align="right">641184.1</td>
+<td align="right">252</td>
+<td align="right">2018</td>
+<td align="left">TD600</td>
+<td align="right">43227</td>
+<td align="right">127</td>
+<td align="right">3</td>
+<td align="right">2</td>
+<td align="right">NA</td>
+<td align="right">0</td>
+<td align="right">0.3479487</td>
+<td align="right">8.969744</td>
+<td align="right">6.410333</td>
+<td align="right">19.80567</td>
+<td align="right">11.78978</td>
+<td align="left">27.70266667</td>
+<td align="right">6</td>
+<td align="right">34</td>
+<td align="right">31.9</td>
+<td align="right">446.9</td>
+<td align="right">1335.2</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+</tr>
+<tr class="even">
+<td align="right">307</td>
+<td align="left">The Dalles</td>
+<td align="left">cherry</td>
+<td align="left">managed</td>
+<td align="left">agricultural</td>
+<td align="left">Trece+ACV</td>
+<td align="left">45.532002</td>
+<td align="right">-121.2274</td>
+<td align="right">5043580</td>
+<td align="right">638406.2</td>
+<td align="right">461</td>
+<td align="right">2018</td>
+<td align="left">TD1000</td>
+<td align="right">43237</td>
+<td align="right">137</td>
+<td align="right">2</td>
+<td align="right">11</td>
+<td align="right">NA</td>
+<td align="right">1</td>
+<td align="right">-0.4296154</td>
+<td align="right">7.959872</td>
+<td align="right">6.238222</td>
+<td align="right">20.44167</td>
+<td align="right">11.72011</td>
+<td align="left">29.79355556</td>
+<td align="right">7</td>
+<td align="right">43</td>
+<td align="right">25.7</td>
+<td align="right">472.2</td>
+<td align="right">1435.0</td>
+<td align="right">186.944</td>
+<td align="right">222.504</td>
+<td align="right">225.552</td>
+</tr>
+<tr class="odd">
+<td align="right">310</td>
+<td align="left">The Dalles</td>
+<td align="left">cherry</td>
+<td align="left">managed</td>
+<td align="left">agricultural</td>
+<td align="left">Trece+ACV</td>
+<td align="left">45.56439</td>
+<td align="right">-121.1435</td>
+<td align="right">5047326</td>
+<td align="right">644874.7</td>
+<td align="right">241</td>
+<td align="right">2018</td>
+<td align="left">TD750</td>
+<td align="right">43227</td>
+<td align="right">127</td>
+<td align="right">12</td>
+<td align="right">2</td>
+<td align="right">NA</td>
+<td align="right">6</td>
+<td align="right">1.1315385</td>
+<td align="right">9.702949</td>
+<td align="right">7.064556</td>
+<td align="right">21.39767</td>
+<td align="right">12.94622</td>
+<td align="left">31.34144444</td>
+<td align="right">6</td>
+<td align="right">29</td>
+<td align="right">37.7</td>
+<td align="right">538.8</td>
+<td align="right">1605.1</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+</tr>
+<tr class="even">
+<td align="right">311</td>
+<td align="left">The Dalles</td>
+<td align="left">cherry</td>
+<td align="left">managed</td>
+<td align="left">agricultural</td>
+<td align="left">Trece+ACV</td>
+<td align="left">45.577594</td>
+<td align="right">-121.1170</td>
+<td align="right">5048842</td>
+<td align="right">646913.5</td>
+<td align="right">208</td>
+<td align="right">2018</td>
+<td align="left">TD800</td>
+<td align="right">43245</td>
+<td align="right">145</td>
+<td align="right">1</td>
+<td align="right">3</td>
+<td align="right">NA</td>
+<td align="right">1</td>
+<td align="right">0.5314103</td>
+<td align="right">9.435641</td>
+<td align="right">5.274556</td>
+<td align="right">21.41656</td>
+<td align="right">11.28267</td>
+<td align="left">Tmin_wintertot_winter</td>
+<td align="right">6</td>
+<td align="right">34</td>
+<td align="right">33.5</td>
+<td align="right">505.1</td>
+<td align="right">1477.2</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+</tr>
+<tr class="odd">
+<td align="right">312</td>
+<td align="left">The Dalles</td>
+<td align="left">blackberry</td>
+<td align="left">unmanaged</td>
+<td align="left">urban</td>
+<td align="left">Trece+ACV</td>
+<td align="left">45.588418</td>
+<td align="right">-121.1303</td>
+<td align="right">5050020</td>
+<td align="right">645843.0</td>
+<td align="right">112</td>
+<td align="right">2018</td>
+<td align="left">TD800</td>
+<td align="right">43237</td>
+<td align="right">137</td>
+<td align="right">4</td>
+<td align="right">7</td>
+<td align="right">NA</td>
+<td align="right">3</td>
+<td align="right">0.5314103</td>
+<td align="right">9.435641</td>
+<td align="right">5.274556</td>
+<td align="right">21.41656</td>
+<td align="right">11.28267</td>
+<td align="left">30.37844444</td>
+<td align="right">6</td>
+<td align="right">34</td>
+<td align="right">33.5</td>
+<td align="right">505.1</td>
+<td align="right">1477.2</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+</tr>
+<tr class="even">
+<td align="right">315</td>
+<td align="left">Mosier</td>
+<td align="left">cherry</td>
+<td align="left">managed</td>
+<td align="left">agricultural</td>
+<td align="left">Trece+ACV</td>
+<td align="left">45.68845</td>
+<td align="right">-121.3742</td>
+<td align="right">5060719</td>
+<td align="right">626597.2</td>
+<td align="right">100</td>
+<td align="right">2018</td>
+<td align="left">F2359</td>
+<td align="right">43227</td>
+<td align="right">127</td>
+<td align="right">77</td>
+<td align="right">13</td>
+<td align="right">NA</td>
+<td align="right">31</td>
+<td align="right">-0.0979487</td>
+<td align="right">8.295128</td>
+<td align="right">6.032667</td>
+<td align="right">18.66656</td>
+<td align="right">14.61467</td>
+<td align="left">28.91822222</td>
+<td align="right">0</td>
+<td align="right">38</td>
+<td align="right">8.1</td>
+<td align="right">340.6</td>
+<td align="right">1384.5</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+</tr>
+<tr class="odd">
+<td align="right">317</td>
+<td align="left">The Dalles</td>
+<td align="left">peach</td>
+<td align="left">managed</td>
+<td align="left">urban</td>
+<td align="left">Trece+ACV</td>
+<td align="left">45.6224</td>
+<td align="right">-121.2244</td>
+<td align="right">5053628</td>
+<td align="right">638418.1</td>
+<td align="right">53</td>
+<td align="right">2018</td>
+<td align="left">E9627</td>
+<td align="right">43227</td>
+<td align="right">127</td>
+<td align="right">5</td>
+<td align="right">18</td>
+<td align="right">NA</td>
+<td align="right">5</td>
+<td align="right">1.1538462</td>
+<td align="right">9.180769</td>
+<td align="right">8.129444</td>
+<td align="right">21.05967</td>
+<td align="right">13.24156</td>
+<td align="left">29.89433333</td>
+<td align="right">6</td>
+<td align="right">27</td>
+<td align="right">36.4</td>
+<td align="right">545.7</td>
+<td align="right">1577.2</td>
+<td align="right">105.410</td>
+<td align="right">162.306</td>
+<td align="right">164.592</td>
+</tr>
+<tr class="even">
+<td align="right">324</td>
+<td align="left">The Dalles</td>
+<td align="left">cherry</td>
+<td align="left">managed</td>
+<td align="left">agricultural</td>
+<td align="left">Trece+ACV</td>
+<td align="left">45.529334</td>
+<td align="right">-121.2128</td>
+<td align="right">5043309</td>
+<td align="right">639553.1</td>
+<td align="right">383</td>
+<td align="right">2018</td>
+<td align="left">TD1000</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">NA</td>
+<td align="right">0</td>
+<td align="right">-0.4296154</td>
+<td align="right">7.959872</td>
+<td align="right">6.238222</td>
+<td align="right">20.44167</td>
+<td align="right">11.72011</td>
+<td align="left">29.79355556</td>
+<td align="right">7</td>
+<td align="right">43</td>
+<td align="right">25.7</td>
+<td align="right">472.2</td>
+<td align="right">1435.0</td>
+<td align="right">186.944</td>
+<td align="right">222.504</td>
+<td align="right">225.552</td>
+</tr>
+</tbody>
+</table>
+<p>In dataframe4 (from previous years) we have information for each trap_ID such as location, latitude, longitude, setting, etc… But we still don’t have that information bound to mydataframe3 (from 2019)</p>
+<p>To add the additional needed column variables to the 2019 data, we need to join the data from mydataframe3 and mydataframe4 by trap_ID. Here we are only using the mydataframe4 rows from 2018 (because in 2018 there were more weather stations than in 2017). There are additional traps in mydataframe3 that are not in mydataframe4, but here we are ignoring them (inner_join instead of left_join). The command inner_join gets the intersection of both dataframes, while left_join gets all the rows in mydataframe3 with data added from mydataframe4. We are not using left_join, because in this case we want to get rid of rows in mydataframe3 that don’t have corresponding entries in mydataframe4.</p>
+<pre class="r"><code>mydataframe5 &lt;- mydataframe3 %&gt;% 
+  inner_join(mydataframe4 %&gt;% filter(year == 2018) %&gt;% 
+              select(trap_ID, town, host, management, setting, lure, latitude,
+                   longitude, northing_UTM, easting_UTM, elevation_m,
+                   weather_station_uspest), 
+              by=&quot;trap_ID&quot;) %&gt;% 
+  add_column(year = 2019)</code></pre>
+<p>The resulting dataframe5 is a 2019 dataframe with all the column variables added</p>
+<table>
+<caption>mydataframe5, rows 1-10</caption>
+<thead>
+<tr class="header">
+<th align="right">trap_ID</th>
+<th align="right">total_SWD_spring</th>
+<th align="right">total_SWD_summer</th>
+<th align="right">SWD_June</th>
+<th align="left">town</th>
+<th align="left">host</th>
+<th align="left">management</th>
+<th align="left">setting</th>
+<th align="left">lure</th>
+<th align="left">latitude</th>
+<th align="right">longitude</th>
+<th align="right">northing_UTM</th>
+<th align="right">easting_UTM</th>
+<th align="right">elevation_m</th>
+<th align="left">weather_station_uspest</th>
+<th align="right">year</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="right">301</td>
+<td align="right">49</td>
+<td align="right">367</td>
+<td align="right">8</td>
+<td align="left">The Dalles</td>
+<td align="left">cherry</td>
+<td align="left">managed</td>
+<td align="left">agricultural</td>
+<td align="left">Trece+ACV</td>
+<td align="left">45.60467</td>
+<td align="right">-121.2275</td>
+<td align="right">5051653</td>
+<td align="right">638219.8</td>
+<td align="right">277</td>
+<td align="left">E9627</td>
+<td align="right">2019</td>
+</tr>
+<tr class="even">
+<td align="right">303</td>
+<td align="right">27</td>
+<td align="right">680</td>
+<td align="right">4</td>
+<td align="left">The Dalles</td>
+<td align="left">cherry</td>
+<td align="left">managed</td>
+<td align="left">agricultural</td>
+<td align="left">Trece+ACV</td>
+<td align="left">45.577823</td>
+<td align="right">-121.2211</td>
+<td align="right">5048681</td>
+<td align="right">638785.6</td>
+<td align="right">178</td>
+<td align="left">F2372</td>
+<td align="right">2019</td>
+</tr>
+<tr class="odd">
+<td align="right">305</td>
+<td align="right">6</td>
+<td align="right">93</td>
+<td align="right">2</td>
+<td align="left">The Dalles</td>
+<td align="left">raspberry</td>
+<td align="left">managed</td>
+<td align="left">agricultural</td>
+<td align="left">Trece+ACV</td>
+<td align="left">45.565197</td>
+<td align="right">-121.1908</td>
+<td align="right">5047332</td>
+<td align="right">641184.1</td>
+<td align="right">252</td>
+<td align="left">TD600</td>
+<td align="right">2019</td>
+</tr>
+<tr class="even">
+<td align="right">307</td>
+<td align="right">3</td>
+<td align="right">725</td>
+<td align="right">3</td>
+<td align="left">The Dalles</td>
+<td align="left">cherry</td>
+<td align="left">managed</td>
+<td align="left">agricultural</td>
+<td align="left">Trece+ACV</td>
+<td align="left">45.532002</td>
+<td align="right">-121.2274</td>
+<td align="right">5043580</td>
+<td align="right">638406.2</td>
+<td align="right">461</td>
+<td align="left">TD1000</td>
+<td align="right">2019</td>
+</tr>
+<tr class="odd">
+<td align="right">310</td>
+<td align="right">47</td>
+<td align="right">378</td>
+<td align="right">8</td>
+<td align="left">The Dalles</td>
+<td align="left">cherry</td>
+<td align="left">managed</td>
+<td align="left">agricultural</td>
+<td align="left">Trece+ACV</td>
+<td align="left">45.56439</td>
+<td align="right">-121.1435</td>
+<td align="right">5047326</td>
+<td align="right">644874.7</td>
+<td align="right">241</td>
+<td align="left">TD750</td>
+<td align="right">2019</td>
+</tr>
+<tr class="even">
+<td align="right">311</td>
+<td align="right">10</td>
+<td align="right">87</td>
+<td align="right">7</td>
+<td align="left">The Dalles</td>
+<td align="left">cherry</td>
+<td align="left">managed</td>
+<td align="left">agricultural</td>
+<td align="left">Trece+ACV</td>
+<td align="left">45.577594</td>
+<td align="right">-121.1170</td>
+<td align="right">5048842</td>
+<td align="right">646913.5</td>
+<td align="right">208</td>
+<td align="left">TD800</td>
+<td align="right">2019</td>
+</tr>
+<tr class="odd">
+<td align="right">312</td>
+<td align="right">57</td>
+<td align="right">374</td>
+<td align="right">8</td>
+<td align="left">The Dalles</td>
+<td align="left">blackberry</td>
+<td align="left">unmanaged</td>
+<td align="left">urban</td>
+<td align="left">Trece+ACV</td>
+<td align="left">45.588418</td>
+<td align="right">-121.1303</td>
+<td align="right">5050020</td>
+<td align="right">645843.0</td>
+<td align="right">112</td>
+<td align="left">TD800</td>
+<td align="right">2019</td>
+</tr>
+<tr class="even">
+<td align="right">315</td>
+<td align="right">32</td>
+<td align="right">1189</td>
+<td align="right">13</td>
+<td align="left">Mosier</td>
+<td align="left">cherry</td>
+<td align="left">managed</td>
+<td align="left">agricultural</td>
+<td align="left">Trece+ACV</td>
+<td align="left">45.68845</td>
+<td align="right">-121.3742</td>
+<td align="right">5060719</td>
+<td align="right">626597.2</td>
+<td align="right">100</td>
+<td align="left">F2359</td>
+<td align="right">2019</td>
+</tr>
+<tr class="odd">
+<td align="right">317</td>
+<td align="right">20</td>
+<td align="right">721</td>
+<td align="right">11</td>
+<td align="left">The Dalles</td>
+<td align="left">peach</td>
+<td align="left">managed</td>
+<td align="left">urban</td>
+<td align="left">Trece+ACV</td>
+<td align="left">45.6224</td>
+<td align="right">-121.2244</td>
+<td align="right">5053628</td>
+<td align="right">638418.1</td>
+<td align="right">53</td>
+<td align="left">E9627</td>
+<td align="right">2019</td>
+</tr>
+<tr class="even">
+<td align="right">324</td>
+<td align="right">18</td>
+<td align="right">203</td>
+<td align="right">0</td>
+<td align="left">The Dalles</td>
+<td align="left">cherry</td>
+<td align="left">managed</td>
+<td align="left">agricultural</td>
+<td align="left">Trece+ACV</td>
+<td align="left">45.529334</td>
+<td align="right">-121.2128</td>
+<td align="right">5043309</td>
+<td align="right">639553.1</td>
+<td align="right">383</td>
+<td align="left">TD1000</td>
+<td align="right">2019</td>
+</tr>
+</tbody>
+</table>
+<p>Then we add mydataframe5 (2019) to mydataframe4 (all previous years), ensuring that all the columns in mydataframe4 that are not present in mydataframe5 are NAs, to be filled later.</p>
+<pre class="r"><code>mydataframe6 &lt;- dplyr::bind_rows(mydataframe4, mydataframe5)</code></pre>
+<table>
+<caption>mydataframe6, rows 1-10</caption>
+<thead>
+<tr class="header">
+<th align="right">trap_ID</th>
+<th align="left">town</th>
+<th align="left">host</th>
+<th align="left">management</th>
+<th align="left">setting</th>
+<th align="left">lure</th>
+<th align="left">latitude</th>
+<th align="right">longitude</th>
+<th align="right">northing_UTM</th>
+<th align="right">easting_UTM</th>
+<th align="right">elevation_m</th>
+<th align="right">year</th>
+<th align="left">weather_station_uspest</th>
+<th align="right">first_catch_spring_date</th>
+<th align="right">first_catch_spring_day</th>
+<th align="right">total_SWD_spring</th>
+<th align="right">total_SWD_summer</th>
+<th align="right">total_SWD_winter</th>
+<th align="right">SWD_June</th>
+<th align="right">Tmin_winter</th>
+<th align="right">Tmax_winter</th>
+<th align="right">Tmin_spring</th>
+<th align="right">Tmax_spring</th>
+<th align="right">Tmin_summer</th>
+<th align="left">Tmax_summer</th>
+<th align="right">days_below_5_winter</th>
+<th align="right">days_below_0_winter</th>
+<th align="right">DD_winter</th>
+<th align="right">DD_spring</th>
+<th align="right">DD_summer</th>
+<th align="right">precipitation_winter</th>
+<th align="right">precipitation_spring</th>
+<th align="right">precipitation_summer</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="right">301</td>
+<td align="left">The Dalles</td>
+<td align="left">cherry</td>
+<td align="left">managed</td>
+<td align="left">agricultural</td>
+<td align="left">Trece+ACV</td>
+<td align="left">45.60467</td>
+<td align="right">-121.2275</td>
+<td align="right">5051653</td>
+<td align="right">638219.8</td>
+<td align="right">277</td>
+<td align="right">2018</td>
+<td align="left">E9627</td>
+<td align="right">43245</td>
+<td align="right">145</td>
+<td align="right">3</td>
+<td align="right">5</td>
+<td align="right">NA</td>
+<td align="right">3</td>
+<td align="right">1.1538462</td>
+<td align="right">9.180769</td>
+<td align="right">8.129444</td>
+<td align="right">21.05967</td>
+<td align="right">13.24156</td>
+<td align="left">29.89433333</td>
+<td align="right">6</td>
+<td align="right">27</td>
+<td align="right">36.4</td>
+<td align="right">545.7</td>
+<td align="right">1577.2</td>
+<td align="right">105.410</td>
+<td align="right">162.306</td>
+<td align="right">164.592</td>
+</tr>
+<tr class="even">
+<td align="right">303</td>
+<td align="left">The Dalles</td>
+<td align="left">cherry</td>
+<td align="left">managed</td>
+<td align="left">agricultural</td>
+<td align="left">Trece+ACV</td>
+<td align="left">45.577823</td>
+<td align="right">-121.2211</td>
+<td align="right">5048681</td>
+<td align="right">638785.6</td>
+<td align="right">178</td>
+<td align="right">2018</td>
+<td align="left">F2372</td>
+<td align="right">43227</td>
+<td align="right">127</td>
+<td align="right">3</td>
+<td align="right">11</td>
+<td align="right">NA</td>
+<td align="right">0</td>
+<td align="right">-0.4653846</td>
+<td align="right">8.550769</td>
+<td align="right">6.931889</td>
+<td align="right">21.55711</td>
+<td align="right">11.59844</td>
+<td align="left">30.00411111</td>
+<td align="right">0</td>
+<td align="right">48</td>
+<td align="right">12.0</td>
+<td align="right">507.6</td>
+<td align="right">1474.2</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+</tr>
+<tr class="odd">
+<td align="right">305</td>
+<td align="left">The Dalles</td>
+<td align="left">raspberry</td>
+<td align="left">managed</td>
+<td align="left">agricultural</td>
+<td align="left">Trece+ACV</td>
+<td align="left">45.565197</td>
+<td align="right">-121.1908</td>
+<td align="right">5047332</td>
+<td align="right">641184.1</td>
+<td align="right">252</td>
+<td align="right">2018</td>
+<td align="left">TD600</td>
+<td align="right">43227</td>
+<td align="right">127</td>
+<td align="right">3</td>
+<td align="right">2</td>
+<td align="right">NA</td>
+<td align="right">0</td>
+<td align="right">0.3479487</td>
+<td align="right">8.969744</td>
+<td align="right">6.410333</td>
+<td align="right">19.80567</td>
+<td align="right">11.78978</td>
+<td align="left">27.70266667</td>
+<td align="right">6</td>
+<td align="right">34</td>
+<td align="right">31.9</td>
+<td align="right">446.9</td>
+<td align="right">1335.2</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+</tr>
+<tr class="even">
+<td align="right">307</td>
+<td align="left">The Dalles</td>
+<td align="left">cherry</td>
+<td align="left">managed</td>
+<td align="left">agricultural</td>
+<td align="left">Trece+ACV</td>
+<td align="left">45.532002</td>
+<td align="right">-121.2274</td>
+<td align="right">5043580</td>
+<td align="right">638406.2</td>
+<td align="right">461</td>
+<td align="right">2018</td>
+<td align="left">TD1000</td>
+<td align="right">43237</td>
+<td align="right">137</td>
+<td align="right">2</td>
+<td align="right">11</td>
+<td align="right">NA</td>
+<td align="right">1</td>
+<td align="right">-0.4296154</td>
+<td align="right">7.959872</td>
+<td align="right">6.238222</td>
+<td align="right">20.44167</td>
+<td align="right">11.72011</td>
+<td align="left">29.79355556</td>
+<td align="right">7</td>
+<td align="right">43</td>
+<td align="right">25.7</td>
+<td align="right">472.2</td>
+<td align="right">1435.0</td>
+<td align="right">186.944</td>
+<td align="right">222.504</td>
+<td align="right">225.552</td>
+</tr>
+<tr class="odd">
+<td align="right">310</td>
+<td align="left">The Dalles</td>
+<td align="left">cherry</td>
+<td align="left">managed</td>
+<td align="left">agricultural</td>
+<td align="left">Trece+ACV</td>
+<td align="left">45.56439</td>
+<td align="right">-121.1435</td>
+<td align="right">5047326</td>
+<td align="right">644874.7</td>
+<td align="right">241</td>
+<td align="right">2018</td>
+<td align="left">TD750</td>
+<td align="right">43227</td>
+<td align="right">127</td>
+<td align="right">12</td>
+<td align="right">2</td>
+<td align="right">NA</td>
+<td align="right">6</td>
+<td align="right">1.1315385</td>
+<td align="right">9.702949</td>
+<td align="right">7.064556</td>
+<td align="right">21.39767</td>
+<td align="right">12.94622</td>
+<td align="left">31.34144444</td>
+<td align="right">6</td>
+<td align="right">29</td>
+<td align="right">37.7</td>
+<td align="right">538.8</td>
+<td align="right">1605.1</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+</tr>
+<tr class="even">
+<td align="right">311</td>
+<td align="left">The Dalles</td>
+<td align="left">cherry</td>
+<td align="left">managed</td>
+<td align="left">agricultural</td>
+<td align="left">Trece+ACV</td>
+<td align="left">45.577594</td>
+<td align="right">-121.1170</td>
+<td align="right">5048842</td>
+<td align="right">646913.5</td>
+<td align="right">208</td>
+<td align="right">2018</td>
+<td align="left">TD800</td>
+<td align="right">43245</td>
+<td align="right">145</td>
+<td align="right">1</td>
+<td align="right">3</td>
+<td align="right">NA</td>
+<td align="right">1</td>
+<td align="right">0.5314103</td>
+<td align="right">9.435641</td>
+<td align="right">5.274556</td>
+<td align="right">21.41656</td>
+<td align="right">11.28267</td>
+<td align="left">Tmin_wintertot_winter</td>
+<td align="right">6</td>
+<td align="right">34</td>
+<td align="right">33.5</td>
+<td align="right">505.1</td>
+<td align="right">1477.2</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+</tr>
+<tr class="odd">
+<td align="right">312</td>
+<td align="left">The Dalles</td>
+<td align="left">blackberry</td>
+<td align="left">unmanaged</td>
+<td align="left">urban</td>
+<td align="left">Trece+ACV</td>
+<td align="left">45.588418</td>
+<td align="right">-121.1303</td>
+<td align="right">5050020</td>
+<td align="right">645843.0</td>
+<td align="right">112</td>
+<td align="right">2018</td>
+<td align="left">TD800</td>
+<td align="right">43237</td>
+<td align="right">137</td>
+<td align="right">4</td>
+<td align="right">7</td>
+<td align="right">NA</td>
+<td align="right">3</td>
+<td align="right">0.5314103</td>
+<td align="right">9.435641</td>
+<td align="right">5.274556</td>
+<td align="right">21.41656</td>
+<td align="right">11.28267</td>
+<td align="left">30.37844444</td>
+<td align="right">6</td>
+<td align="right">34</td>
+<td align="right">33.5</td>
+<td align="right">505.1</td>
+<td align="right">1477.2</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+</tr>
+<tr class="even">
+<td align="right">315</td>
+<td align="left">Mosier</td>
+<td align="left">cherry</td>
+<td align="left">managed</td>
+<td align="left">agricultural</td>
+<td align="left">Trece+ACV</td>
+<td align="left">45.68845</td>
+<td align="right">-121.3742</td>
+<td align="right">5060719</td>
+<td align="right">626597.2</td>
+<td align="right">100</td>
+<td align="right">2018</td>
+<td align="left">F2359</td>
+<td align="right">43227</td>
+<td align="right">127</td>
+<td align="right">77</td>
+<td align="right">13</td>
+<td align="right">NA</td>
+<td align="right">31</td>
+<td align="right">-0.0979487</td>
+<td align="right">8.295128</td>
+<td align="right">6.032667</td>
+<td align="right">18.66656</td>
+<td align="right">14.61467</td>
+<td align="left">28.91822222</td>
+<td align="right">0</td>
+<td align="right">38</td>
+<td align="right">8.1</td>
+<td align="right">340.6</td>
+<td align="right">1384.5</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+</tr>
+<tr class="odd">
+<td align="right">317</td>
+<td align="left">The Dalles</td>
+<td align="left">peach</td>
+<td align="left">managed</td>
+<td align="left">urban</td>
+<td align="left">Trece+ACV</td>
+<td align="left">45.6224</td>
+<td align="right">-121.2244</td>
+<td align="right">5053628</td>
+<td align="right">638418.1</td>
+<td align="right">53</td>
+<td align="right">2018</td>
+<td align="left">E9627</td>
+<td align="right">43227</td>
+<td align="right">127</td>
+<td align="right">5</td>
+<td align="right">18</td>
+<td align="right">NA</td>
+<td align="right">5</td>
+<td align="right">1.1538462</td>
+<td align="right">9.180769</td>
+<td align="right">8.129444</td>
+<td align="right">21.05967</td>
+<td align="right">13.24156</td>
+<td align="left">29.89433333</td>
+<td align="right">6</td>
+<td align="right">27</td>
+<td align="right">36.4</td>
+<td align="right">545.7</td>
+<td align="right">1577.2</td>
+<td align="right">105.410</td>
+<td align="right">162.306</td>
+<td align="right">164.592</td>
+</tr>
+<tr class="even">
+<td align="right">324</td>
+<td align="left">The Dalles</td>
+<td align="left">cherry</td>
+<td align="left">managed</td>
+<td align="left">agricultural</td>
+<td align="left">Trece+ACV</td>
+<td align="left">45.529334</td>
+<td align="right">-121.2128</td>
+<td align="right">5043309</td>
+<td align="right">639553.1</td>
+<td align="right">383</td>
+<td align="right">2018</td>
+<td align="left">TD1000</td>
+<td align="right">NA</td>
+<td align="right">NA</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">NA</td>
+<td align="right">0</td>
+<td align="right">-0.4296154</td>
+<td align="right">7.959872</td>
+<td align="right">6.238222</td>
+<td align="right">20.44167</td>
+<td align="right">11.72011</td>
+<td align="left">29.79355556</td>
+<td align="right">7</td>
+<td align="right">43</td>
+<td align="right">25.7</td>
+<td align="right">472.2</td>
+<td align="right">1435.0</td>
+<td align="right">186.944</td>
+<td align="right">222.504</td>
+<td align="right">225.552</td>
+</tr>
+</tbody>
+</table>
+<p>This concludes the first part of data cleanup from trap data. Now we have all the SWD catch information, but we still need to add the weather station information for 2019.</p>
+</div>
+<div id="part-2-weather-station-data" class="section level1">
+<h1>Part 2: Weather station data</h1>
+<p>Each trap site is associated to a nearby weather station. The codes and location for each weather station were obtained from www.uspest.org. The data for a particular weather station looks like this: <img src="Images/Pic_4.PNG" width="655" /></p>
+<p>Again, this is a mess because it has no clear headers, and we have temperature and precipitation data for every day that we will need to eventually transform.</p>
+<p>First, we use mydataframe5 which already had all the variable information for 2019 data. Then, we need to select the weather station codes to search for. This chunk selects the unique weather station codes needed from mydataframe5 without duplicates (because some trap sites share the same weather station, therefore the same weather station code may be listed more than once)</p>
+<pre class="r"><code>weather_station_uspest_codes19 &lt;- unique(mydataframe5$weather_station_uspest)</code></pre>
+<p>I am going to use the library curl, to download information from websites.</p>
+<pre class="r"><code>library(curl) 
+
+#First, I define a variable for the URL
+uspest_website &lt;- &quot;https://uspest.org/data/&quot; 
+
+# Then, I specify a destination folder to save all the downloaded data
+destination_folder &lt;- &quot;~/Oregon State/Datasheets/SWD wild sites/Weather station data/US pest stations/DD models/2019/&quot; </code></pre>
+<p>Then we download all data from uspest.org. This for-loop searches each weather station code in weather_station_uspest_codes19, downloads the corresponding data, and then saves the results to the destination folder specified above</p>
+<pre class="r"><code># weather_station_code is a name we give to the variable inside the for-loop which has the current value of the weather station for each iteration
+for (weather_station_code in weather_station_uspest_codes19) {
+  curl_download(url=paste(uspest_website, weather_station_code, &quot;19.txt&quot;, sep=&quot;&quot;), destfile=paste(destination_folder, &quot;2019 &quot;, weather_station_code, &quot;.txt&quot;, sep=&quot;&quot;)) #this specifies the destination folder defined above and saves as text
+}</code></pre>
+<p>So now this folder with all the downloaded data for each weather station looks like this: <img src="Images/Pic_5.PNG" width="766" /></p>
+<p>And each individual .txt file looks like this: <img src="Images/Pic_6.PNG" width="706" /></p>
+<p>This is still a mess, it does not have proper headings, and we don’t need daily data, and eventually the weather variables that we want in the final analysis are the ones shown here in yellow (from an old 2018 database)… <img src="Images/Pic_7.PNG" width="926" /></p>
+<p>To get there, this for-loop searches each one of the weather station .txt files, adds a column for cumulative sum of degree days (DD), a column for variable names (headers), and creates a .csv file for each in the same folder</p>
+<pre class="r"><code>#Extract column names from an old dataframe (in this case an existing 2017 dataframe)
+col_names &lt;- colnames(read.csv(&quot;~\\Oregon State\\Datasheets\\SWD wild sites\\Weather station data\\US pest stations\\DD models\\2017 C5099.csv&quot;))
+
+# weather_station_code is a name we give to the variable inside the for-loop which has the current value of the weather station for each iteration
+for (weather_station_code in weather_station_uspest_codes19) {
+  mydataframe8 &lt;- read.table(paste(destination_folder, &quot;2019 &quot;, weather_station_code, &quot;.txt&quot;, sep=&quot;&quot;), skip = 1) # skip = 1 skips the first row because they are not variable names
+  mydataframe8 &lt;- cbind(mydataframe8, cumsum(mydataframe8[,6])) # Adds the cumulative sum from the 6th column (DD)
+  names(mydataframe8)&lt;- col_names #Assigns column names as defined above
+  write.csv(mydataframe8, paste(destination_folder, &quot;2019 &quot;, weather_station_code, &quot;.csv&quot;, sep=&quot;&quot;), row.names = FALSE )
+} #row.names = FALSE so that it does not add an additional column with row names</code></pre>
+<p>So now each .csv file looks like this: <img src="Images/Pic_8.PNG" width="398" /></p>
+<p>We then create an empty dataset with two column variables, station and year. We had already previously created mydataframe5 which only had 2019 information. This weather_station_list will be used in the chunks below</p>
+<pre class="r"><code>weather_station_list &lt;- mydataframe5 %&gt;% 
+  select(year, weather_station_uspest) 
+names(weather_station_list) &lt;- c(&quot;year&quot;, &quot;station&quot;)</code></pre>
+<p>The next chunk creates an empty data frame (pre-filled with NA) to store all the aggregated information, by manually writing all the column names for the specific weather variables I want in the final analysis. The column names can also be automatically extracted using a similar code as above when there is an existing database, but I wanted to show how to do this when one wants to specify column names by hand.</p>
+<pre class="r"><code># Get number of items in the list
+num_items &lt;- nrow(weather_station_list)
+
+weather_variables &lt;- data.frame(weather_station_uspest=rep(NA, num_items), tmin_winter=rep(NA, num_items), tmax_winter=rep(NA, num_items), tmin_spring=rep(NA, num_items), tmax_spring=rep(NA, num_items), tmin_summer=rep(NA, num_items), tmax_summer=rep(NA, num_items), days_below_minus_5_winter=rep(NA, num_items), days_below_zero_winter=rep(NA, num_items), DD_winter=rep(NA, num_items), DD_spring=rep(NA, num_items), DD_summer=rep(NA, num_items), precipitation_winter=rep(NA, num_items), precipitation_spring=rep(NA, num_items), precipitation_summer=rep(NA, num_items))</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="left">weather_station_uspest</th>
+<th align="left">tmin_winter</th>
+<th align="left">tmax_winter</th>
+<th align="left">tmin_spring</th>
+<th align="left">tmax_spring</th>
+<th align="left">tmin_summer</th>
+<th align="left">tmax_summer</th>
+<th align="left">days_below_minus_5_winter</th>
+<th align="left">days_below_zero_winter</th>
+<th align="left">DD_winter</th>
+<th align="left">DD_spring</th>
+<th align="left">DD_summer</th>
+<th align="left">precipitation_winter</th>
+<th align="left">precipitation_spring</th>
+<th align="left">precipitation_summer</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+</tr>
+<tr class="even">
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+</tr>
+<tr class="odd">
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+</tr>
+<tr class="even">
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+</tr>
+<tr class="odd">
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+</tr>
+<tr class="even">
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+</tr>
+<tr class="odd">
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+</tr>
+<tr class="even">
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+</tr>
+<tr class="odd">
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+</tr>
+<tr class="even">
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+</tr>
+</tbody>
+</table>
+<p>The code below computes values for days below -5, days below 0, DD winter/spring/summer, precipitation winter/spring/summer for all weather stations. It goes through every single .csv file for each weather station in the folder, and then compiles all the values into a single dataframe. It uses weather_station_list to search all the corresponding .csv files that have the name format “year station.csv”</p>
+<pre class="r"><code>#function to convert inches to mm (precipitation)
+inchesToMM &lt;- function(length_inch) {
+  return (length_inch * 25.4)
+}
+# Go through the entire list
+for(n in seq(1, num_items)) {
+  # Make sure there is year and station available for that item
+  if (!is.na(weather_station_list$year[n]) &amp;&amp; !is.na(weather_station_list$station[n])) {
+    # Create file name based on year and station identifier
+    file_name &lt;- paste(&quot;C:/Users/rendonda/Documents/Oregon State/Datasheets/SWD wild sites/Weather station data/US pest stations/DD models/2019/&quot;, weather_station_list$year[n], &quot; &quot;, weather_station_list$station[n], &quot;.csv&quot;, sep=&quot;&quot;)
+    print(file_name)
+    if (file.exists(file_name)) {
+      # Read in weather station data file
+      data &lt;- read.csv(file_name, na.strings = &quot;M&quot;, stringsAsFactors = FALSE)
+      
+      # Add column with temperatures converted to Celsius and rain inches converted to MM
+      data &lt;- cbind(data, rain_mm=inchesToMM(data$precip))
+
+      # Create subsets of data corresponding to each season / year
+      if (weather_station_list$year[n] == 2019) {
+        data$Date = as.Date(paste(&quot;2019-&quot;,sprintf(&quot;%02d-%02d&quot;, data$mn,data$day),sep=&quot;&quot;)) #create a year-month-day column
+        date_start &lt;- &quot;2018-12-21&quot;
+        date_winter &lt;- &quot;2019-03-20&quot;
+        date_spring &lt;- &quot;2019-06-20&quot;
+        date_summer &lt;- &quot;2019-09-20&quot;
+      }
+      data_winter &lt;- data %&gt;% filter(Date &gt; date_start &amp; Date &lt; date_winter)
+      data_spring &lt;- data %&gt;% filter(Date &gt; date_start &amp; Date &lt; date_spring)
+      data_summer &lt;- data %&gt;% filter(Date &gt; date_start &amp; Date &lt; date_summer)
+      # Create subsets of data corresponding to each season only
+      if (weather_station_list$year[n] == 2019) {
+        weather_variables$DD_winter[n] &lt;- data$CUMDD10[data$Date == as.Date(&quot;2019-03-20&quot;)]
+        weather_variables$DD_spring[n] &lt;- data$CUMDD10[data$Date == as.Date(&quot;2019-06-20&quot;)]
+        weather_variables$DD_summer[n] &lt;- data$CUMDD10[data$Date == as.Date(&quot;2019-09-20&quot;)]
+        data_winter_only &lt;- data %&gt;% filter(Date &gt; &quot;2018-12-21&quot; &amp; Date &lt; &quot;2019-03-20&quot;)
+        data_spring_only &lt;- data %&gt;% filter(Date &gt; &quot;2019-03-21&quot; &amp; Date &lt; &quot;2019-06-20&quot;)
+        data_summer_only &lt;- data %&gt;% filter(Date &gt; &quot;2019-06-21&quot; &amp; Date &lt; &quot;2019-09-20&quot;)
+      }      
+      weather_variables$weather_station_uspest[n] &lt;- weather_station_list$station[n]
+      weather_variables$tmin_winter[n] &lt;- mean(data_winter_only$min)
+      weather_variables$tmax_winter[n] &lt;- mean(data_winter_only$max)
+      weather_variables$tmin_spring[n] &lt;- mean(data_spring_only$min)
+      weather_variables$tmax_spring[n] &lt;- mean(data_spring_only$max)
+      weather_variables$tmin_summer[n] &lt;- mean(data_summer_only$min)
+      weather_variables$tmax_summer[n] &lt;- mean(data_summer_only$max)
+      
+      weather_variables$days_below_minus_5_winter[n] &lt;- sum(data_winter$min &lt; -5.0)
+      weather_variables$days_below_zero_winter[n] &lt;- sum(data_winter$min &lt; 0.0)
+      
+      if (sum(data_winter$rain_mm, na.rm = TRUE) &gt;= 20.0) {
+        weather_variables$precipitation_winter[n] &lt;- sum(data_winter$rain_mm)
+      }
+      if (sum(data_spring$rain_mm, na.rm = TRUE) &gt;= 20.0) {
+        weather_variables$precipitation_spring[n] &lt;- sum(data_spring$rain_mm)
+      }
+      if (sum(data_summer$rain_mm, na.rm = TRUE) &gt;= 20.0) {
+        weather_variables$precipitation_summer[n] &lt;- sum(data_summer$rain_mm)
+      }
+      
+    } else {
+      print(paste(&quot;File not found! &quot;, file_name, sep=&quot;&quot;))
+    } 
+  } else {
+    print(paste(&quot;Weather station list NA! &quot;, file_name, sep=&quot;&quot;))
+  }
+}
+
+# Save resulting dataframe as .csv file
+write.csv(weather_variables, &quot;C:/Users/rendonda/Documents/Oregon State/Datasheets/SWD wild sites/Weather station data/US pest stations/DD models/clean weather data/weather_station_list_results_2019.csv&quot;, na=&quot;&quot;, row.names = FALSE)</code></pre>
+<p>And this is then what the resulting dataframe with the weather variables for 2019 looks like: <img src="Images/Pic_9.PNG" width="748" /></p>
+<p>Which I can then manually copy and paste into the larger database, or bind using inner_join or left_join. The end result is this, highlighting 2019 newly formatted and added data under the old 2017 data. This same script can be reused for 2020, and any following year… <img src="Images/Pic_10.PNG" width="946" /></p>
+</div>
+
+
+
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open')
+  });
+});
+</script>
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
