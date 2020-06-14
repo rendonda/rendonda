@@ -411,7 +411,7 @@ Let's visually examine it and see what it looks like. I'll compare the total SWD
 swd_weather <- read.csv("C:/Users/rendonda/Documents/Oregon State/Datasheets/SWD wild sites/SWD_traps_HR_Wasco_171819.csv", stringsAsFactors = FALSE)
 swd_weather$year <- as.character(swd_weather$year)
 ggplot(data = swd_weather)+
-  geom_point(mapping= aes(y = Tmax_spring, x = SWD_June, color = year))
+  geom_point(mapping= aes(x = Tmax_spring, y = SWD_June, color = year))
 ```
 
 It seems that there is no relationship between spring temperatures and total SWD catch in June. But now many more complex analyses can be done with this clean dataset. 

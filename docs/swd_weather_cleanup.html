@@ -2389,7 +2389,7 @@ write.csv(weather_variables, &quot;C:/Users/rendonda/Documents/Oregon State/Data
 <pre class="r"><code>swd_weather &lt;- read.csv(&quot;C:/Users/rendonda/Documents/Oregon State/Datasheets/SWD wild sites/SWD_traps_HR_Wasco_171819.csv&quot;, stringsAsFactors = FALSE)
 swd_weather$year &lt;- as.character(swd_weather$year)
 ggplot(data = swd_weather)+
-  geom_point(mapping= aes(y = Tmax_spring, x = SWD_June, color = year))</code></pre>
+  geom_point(mapping= aes(x = Tmax_spring, y = SWD_June, color = year))</code></pre>
 <p><img src="swd_weather_cleanup_files/figure-html/unnamed-chunk-37-1.png" width="672" /></p>
 <p>It seems that there is no relationship between spring temperatures and total SWD catch in June. But now many more complex analyses can be done with this clean dataset.</p>
 </div>
