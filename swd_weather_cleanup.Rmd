@@ -33,7 +33,7 @@ This dataset is meant to be easy to understand for stakeholders who consult it e
 
 I am going to clean this dataset so that at the end we are left with a dataframe that shows the total number of SWD collected in spring, in summer, and in the month of June.  
 
-First, import the raw dataset shown above. I use stringsAsFactors=FALSE to prevent R from converting all values into factors. Especially when there are headers or multiple headers, converting all values into factors does not make sense, as it will assign a level to "male SWD". Rather, we want R to treat everything as a string and convert values manually.
+First, import the raw table shown above. I use stringsAsFactors=FALSE to prevent R from converting all values into factors. Especially when there are headers or multiple headers, converting all values into factors does not make sense, as it will assign a level to "male SWD". Rather, we want R to treat everything as a string and convert values manually.
 ```{r, echo = TRUE, warning=FALSE, message=FALSE}
 library(tidyverse)
 raw_swd <- read.csv("C:\\Users\\rendonda\\Documents\\Oregon State\\Datasheets\\SWD wild sites\\Wasco County 2019.csv", header=FALSE, stringsAsFactors=FALSE)
@@ -309,12 +309,22 @@ knitr::kable(
 )
 ```
 
-The code below computes values for days below -5, days below 0, DD winter/spring/summer, precipitation winter/spring/summer for all weather stations. It goes through every single .csv file for each weather station in the folder, and then compiles all the values into a single dataframe. It uses weather_station_list to search all the corresponding .csv files that have the name format "year station.csv"
+One problem is that the old data to match is in metric system (mm for precipitation and C for temperature), while the new datasets are in imperial (inches and farenheit). So first I write a function to convert inches to mm and Farenheit to Celsius
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results= 'hide'}
 #function to convert inches to mm (precipitation)
 inchesToMM <- function(length_inch) {
   return (length_inch * 25.4)
 }
+
+#function to convert F to C (min, max, DD)
+FtoC <- function(farenheit){
+  C = (farenheit - 32)*(5/9);
+  return(C)
+}
+```
+
+The code below then computes values for days below -5 C, days below 0 C, DD winter/spring/summer, precipitation winter/spring/summer for all weather stations. It goes through every single .csv file for each weather station in the folder, and then compiles all the values into a single dataframe. It uses weather_station_list to search all the corresponding .csv files that have the name format "year station.csv"
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results= 'hide'}
 # Go through the entire list
 for(n in seq(1, num_items)) {
   # Make sure there is year and station available for that item
@@ -328,6 +338,10 @@ for(n in seq(1, num_items)) {
       
       # Add column with temperatures converted to Celsius and rain inches converted to MM
       data <- cbind(data, rain_mm=inchesToMM(data$precip))
+      data$min <- FtoC(data$min)
+      data$max <- FtoC(data$max)
+      data$DD10 <- pmax(FtoC(data$DD10), 0.0)
+      data$CUMDD10 <- pmax(FtoC(data$CUMDD10), 0.0)
 
       # Create subsets of data corresponding to each season / year
       if (weather_station_list$year[n] == 2019) {
@@ -391,3 +405,15 @@ Which I can then manually copy and paste into the larger database, or bind using
 ```{r, echo= FALSE, warning=FALSE, message=FALSE}
 knitr::include_graphics("Images/Pic_10.png")
 ```
+
+Let's visually examine it and see what it looks like. I'll compare the total SWD collected in 2017, 2018, and 2019 as a function of the maximum spring temperature. 
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results= 'show'}
+swd_weather <- read.csv("C:/Users/rendonda/Documents/Oregon State/Datasheets/SWD wild sites/SWD_traps_HR_Wasco_171819.csv", stringsAsFactors = FALSE)
+swd_weather$year <- as.character(swd_weather$year)
+ggplot(data = swd_weather)+
+  geom_point(mapping= aes(x = Tmax_spring, y = SWD_June, color = year))
+```
+
+It seems that there is no relationship between spring temperatures and total SWD catch in June. But now many more complex analyses can be done with this clean dataset. 
+
+

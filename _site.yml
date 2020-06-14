@@ -1,5 +1,6 @@
 name: "rendonda-website"
 output_dir: docs
+include: 
 navbar:
   title: "Dalila Rendon R data scripts"
   left:

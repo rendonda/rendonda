@@ -306,7 +306,7 @@ $(document).ready(function () {
 <p>First, this is what the SWD raw trap count data looks like, courtesy of Oregon State University extension service in Wasco county. <img src="Images/Pic_2.PNG" width="958" /></p>
 <p>This dataset is meant to be easy to understand for stakeholders who consult it every week, but it is a data analysis nightmare. It has two headers, in row 1 it shows each date of sampling plus the totals, and the second header shows information about the sites. It also has two extra rows at the bottom showing total and average. The other issue is that it separates SWD by sexes, but in the end I only want total number.</p>
 <p>I am going to clean this dataset so that at the end we are left with a dataframe that shows the total number of SWD collected in spring, in summer, and in the month of June.</p>
-<p>First, import the raw dataset shown above. I use stringsAsFactors=FALSE to prevent R from converting all values into factors. Especially when there are headers or multiple headers, converting all values into factors does not make sense, as it will assign a level to “male SWD”. Rather, we want R to treat everything as a string and convert values manually.</p>
+<p>First, import the raw table shown above. I use stringsAsFactors=FALSE to prevent R from converting all values into factors. Especially when there are headers or multiple headers, converting all values into factors does not make sense, as it will assign a level to “male SWD”. Rather, we want R to treat everything as a string and convert values manually.</p>
 <pre class="r"><code>library(tidyverse)
 raw_swd &lt;- read.csv(&quot;C:\\Users\\rendonda\\Documents\\Oregon State\\Datasheets\\SWD wild sites\\Wasco County 2019.csv&quot;, header=FALSE, stringsAsFactors=FALSE)</code></pre>
 <table>
@@ -2302,12 +2302,19 @@ weather_variables &lt;- data.frame(weather_station_uspest=rep(NA, num_items), tm
 </tr>
 </tbody>
 </table>
-<p>The code below computes values for days below -5, days below 0, DD winter/spring/summer, precipitation winter/spring/summer for all weather stations. It goes through every single .csv file for each weather station in the folder, and then compiles all the values into a single dataframe. It uses weather_station_list to search all the corresponding .csv files that have the name format “year station.csv”</p>
+<p>One problem is that the old data to match is in metric system (mm for precipitation and C for temperature), while the new datasets are in imperial (inches and farenheit). So first I write a function to convert inches to mm and Farenheit to Celsius</p>
 <pre class="r"><code>#function to convert inches to mm (precipitation)
 inchesToMM &lt;- function(length_inch) {
   return (length_inch * 25.4)
 }
-# Go through the entire list
+
+#function to convert F to C (min, max, DD)
+FtoC &lt;- function(farenheit){
+  C = (farenheit - 32)*(5/9);
+  return(C)
+}</code></pre>
+<p>The code below then computes values for days below -5 C, days below 0 C, DD winter/spring/summer, precipitation winter/spring/summer for all weather stations. It goes through every single .csv file for each weather station in the folder, and then compiles all the values into a single dataframe. It uses weather_station_list to search all the corresponding .csv files that have the name format “year station.csv”</p>
+<pre class="r"><code># Go through the entire list
 for(n in seq(1, num_items)) {
   # Make sure there is year and station available for that item
   if (!is.na(weather_station_list$year[n]) &amp;&amp; !is.na(weather_station_list$station[n])) {
@@ -2320,6 +2327,10 @@ for(n in seq(1, num_items)) {
       
       # Add column with temperatures converted to Celsius and rain inches converted to MM
       data &lt;- cbind(data, rain_mm=inchesToMM(data$precip))
+      data$min &lt;- FtoC(data$min)
+      data$max &lt;- FtoC(data$max)
+      data$DD10 &lt;- pmax(FtoC(data$DD10), 0.0)
+      data$CUMDD10 &lt;- pmax(FtoC(data$CUMDD10), 0.0)
 
       # Create subsets of data corresponding to each season / year
       if (weather_station_list$year[n] == 2019) {
@@ -2372,8 +2383,15 @@ for(n in seq(1, num_items)) {
 
 # Save resulting dataframe as .csv file
 write.csv(weather_variables, &quot;C:/Users/rendonda/Documents/Oregon State/Datasheets/SWD wild sites/Weather station data/US pest stations/DD models/clean weather data/weather_station_list_results_2019.csv&quot;, na=&quot;&quot;, row.names = FALSE)</code></pre>
-<p>And this is then what the resulting dataframe with the weather variables for 2019 looks like: <img src="Images/Pic_9.PNG" width="748" /></p>
-<p>Which I can then manually copy and paste into the larger database, or bind using inner_join or left_join. The end result is this, highlighting 2019 newly formatted and added data under the old 2017 data. This same script can be reused for 2020, and any following year… <img src="Images/Pic_10.PNG" width="946" /></p>
+<p>And this is then what the resulting dataframe with the weather variables for 2019 looks like: <img src="Images/Pic_9.PNG" width="842" /></p>
+<p>Which I can then manually copy and paste into the larger database, or bind using inner_join or left_join. The end result is this, highlighting 2019 newly formatted and added data under the old 2017 data. This same script can be reused for 2020, and any following year… <img src="Images/Pic_10.PNG" width="943" /></p>
+<p>Let’s visually examine it and see what it looks like. I’ll compare the total SWD collected in 2017, 2018, and 2019 as a function of the maximum spring temperature.</p>
+<pre class="r"><code>swd_weather &lt;- read.csv(&quot;C:/Users/rendonda/Documents/Oregon State/Datasheets/SWD wild sites/SWD_traps_HR_Wasco_171819.csv&quot;, stringsAsFactors = FALSE)
+swd_weather$year &lt;- as.character(swd_weather$year)
+ggplot(data = swd_weather)+
+  geom_point(mapping= aes(x = Tmax_spring, y = SWD_June, color = year))</code></pre>
+<p><img src="swd_weather_cleanup_files/figure-html/unnamed-chunk-37-1.png" width="672" /></p>
+<p>It seems that there is no relationship between spring temperatures and total SWD catch in June. But now many more complex analyses can be done with this clean dataset.</p>
 </div>
 
 
