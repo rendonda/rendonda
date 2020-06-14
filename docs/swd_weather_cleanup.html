@@ -2385,11 +2385,11 @@ for(n in seq(1, num_items)) {
 write.csv(weather_variables, &quot;C:/Users/rendonda/Documents/Oregon State/Datasheets/SWD wild sites/Weather station data/US pest stations/DD models/clean weather data/weather_station_list_results_2019.csv&quot;, na=&quot;&quot;, row.names = FALSE)</code></pre>
 <p>And this is then what the resulting dataframe with the weather variables for 2019 looks like: <img src="Images/Pic_9.PNG" width="842" /></p>
 <p>Which I can then manually copy and paste into the larger database, or bind using inner_join or left_join. The end result is this, highlighting 2019 newly formatted and added data under the old 2017 data. This same script can be reused for 2020, and any following year… <img src="Images/Pic_10.PNG" width="943" /></p>
-<p>Let’s visually examine it and see what it looks like. I’ll compare the total SWD collected in 2017, 2018, and 2019 as a function of the maximum spring temperature.</p>
+<p>Let’s visually examine it and see what it looks like. I’ll compare the total SWD collected in June as a function of the maximum spring temperature for 2017, 2018, and 2019.</p>
 <pre class="r"><code>swd_weather &lt;- read.csv(&quot;C:/Users/rendonda/Documents/Oregon State/Datasheets/SWD wild sites/SWD_traps_HR_Wasco_171819.csv&quot;, stringsAsFactors = FALSE)
 swd_weather$year &lt;- as.character(swd_weather$year)
 ggplot(data = swd_weather)+
-  geom_point(mapping= aes(x = Tmax_spring, y = SWD_June, color = year))</code></pre>
+  geom_point(mapping= aes(y = Tmax_spring, x = SWD_June, color = year))</code></pre>
 <p><img src="swd_weather_cleanup_files/figure-html/unnamed-chunk-37-1.png" width="672" /></p>
 <p>It seems that there is no relationship between spring temperatures and total SWD catch in June. But now many more complex analyses can be done with this clean dataset.</p>
 </div>
